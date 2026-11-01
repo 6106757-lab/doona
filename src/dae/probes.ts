@@ -9,6 +9,7 @@ const protocols: Record<string, {connect: boolean; stream: boolean; udp: boolean
   vless: {connect: true, stream: true, udp: null},
   trojan: {connect: true, stream: true, udp: null},
   anytls: {connect: true, stream: true, udp: null},
+  masque: {connect: true, stream: true, udp: true},
   hysteria2: {connect: false, stream: true, udp: true},
   tuic: {connect: false, stream: true, udp: true},
   juicity: {connect: false, stream: true, udp: true},
