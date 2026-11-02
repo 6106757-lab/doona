@@ -161,9 +161,13 @@ export type PolicyDeclaration = {owner: GroupOwner | undefined; complete: boolea
 type RouteContext = {g: Group | undefined; members: Parameters<typeof memberSections>[0]; outbounds: OutboundCatalogue};
 const noNodes: Node[] = [];
 const noFilters: string[] = [];
-const routeHelp = {default_member_id: 'policy.defaultMemberHelp', final_outbound: 'policy.finalOutboundHelp'} as const;
+const routeHelp = {
+  default_member_id: 'policy.defaultMemberHelp',
+  final_outbound: 'policy.finalOutboundHelp',
+  detour: 'policy.detourHelp'
+} as const;
 // The file's key for each field, as the draft holds it.
-const routeKeys = {default_member_id: 'default', final_outbound: 'final'} as const;
+const routeKeys = {default_member_id: 'default', final_outbound: 'final', detour: 'detour'} as const;
 // `origin` is the source the dialog opened on, so a change on disk refuses the first save; once refused, a save goes against the source as it is
 // declared then, since the sources are read again after a refusal. `opened` is the entry as the dialog opened on it, null when creating.
 type Draft = {
@@ -175,6 +179,7 @@ type Draft = {
   filters: GroupFilterDraft[];
   default: string | null;
   final: string | null;
+  detour: string | null;
   interrupt: string | null;
 };
 type Input =
@@ -228,8 +233,8 @@ export function useGroupDialog(input: Input): GroupDialogView {
   );
   const routes: RouteField[] = creating
     ? manualPolicy(draft?.policy ?? null)
-      ? ['default_member_id', 'final_outbound']
-      : ['final_outbound']
+      ? ['default_member_id', 'final_outbound', 'detour']
+      : ['final_outbound', 'detour']
     : routeFields(context.g, draft?.policy ?? null);
   const members = draft && manualPolicy(draft.policy) ? draftMembers(filters, nodes, t) : creating ? [] : context.members;
   const groupName = creating ? (draft?.name.trim() ?? '') : (draft?.name ?? '');
@@ -274,14 +279,21 @@ export function useGroupDialog(input: Input): GroupDialogView {
     if (nameProblem || invalid) return;
     const filters = groupFilterTexts(draft.filters).filter(f => f.trim());
     // A retry merges into the group as read again.
-    const mine = {filters, policy: draft.policy, interrupt: draft.interrupt, default: draft.default, final: draft.final};
+    const mine = {
+      filters,
+      policy: draft.policy,
+      interrupt: draft.interrupt,
+      default: draft.default,
+      final: draft.final,
+      detour: draft.detour
+    };
     const keys = routes.map(id => routeKeys[id]);
     const retry = draft.refused && draft.opened ? mergeGroupRetry(mine, draft.opened, entry, keys) : null;
     if (retry?.kind === 'gone') {
       refuse(t('policy.editReopen'));
       return;
     }
-    const written = {default: entry?.default ?? null, final: entry?.final ?? null};
+    const written = {default: entry?.default ?? null, final: entry?.final ?? null, detour: entry?.detour ?? null};
     if (
       !groupEditSafe(filters, draft.policy, entry) ||
       !routes.every(id => routeWritable(draft[routeKeys[id]], written[routeKeys[id]])) ||
@@ -482,6 +494,7 @@ export function useGroupDialog(input: Input): GroupDialogView {
           filters: filters.map(filter => groupFilterDraft(filter)),
           default: null,
           final: null,
+          detour: null,
           interrupt: null
         });
       else if (declared && !blocked)
@@ -497,6 +510,7 @@ export function useGroupDialog(input: Input): GroupDialogView {
           ).map(filter => groupFilterDraft(filter)),
           default: routeValue(declared.entry.default),
           final: routeValue(declared.entry.final),
+          detour: routeValue(declared.entry.detour),
           interrupt: declared.entry.interrupt
         });
     },
