@@ -2421,7 +2421,7 @@ export interface components {
             /** @description The policy chooses automatically but accepts a pinned member; PUT selection pins, DELETE selection returns to automatic. */
             can_override: boolean;
             supports_nested_groups: boolean;
-            mutable_config: ("policy" | "default_member_id" | "final_outbound" | "check_url" | "check_interval" | "tolerance" | "idle_timeout" | "interrupt_connections")[];
+            mutable_config: ("policy" | "default_member_id" | "final_outbound" | "detour" | "check_url" | "check_interval" | "tolerance" | "idle_timeout" | "interrupt_connections")[];
             probe_transports: components["schemas"]["Transport"][];
         };
         Group: {
