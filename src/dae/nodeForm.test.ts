@@ -188,7 +188,7 @@ const shown: [string, Protocol, Record<string, string>, string][] = [
   ['hysteria2 obfs', 'hysteria2', {obfs: 'salamander'}, 'password sni insecure obfs obfs-password dialer-proxy'],
   ['tuic', 'tuic', {}, 'username password sni insecure congestion_control dialer-proxy'],
   ['anytls', 'anytls', {}, 'password sni insecure dialer-proxy'],
-  ['juicity', 'juicity', {}, 'username password sni insecure dialer-proxy']
+  ['juicity', 'juicity', {}, 'username password sni insecure dialer-proxy'],
   ['masque', 'masque', {}, 'sni insecure network private-key public-key ip ipv6 mtu remote-dns-resolve dns dialer-proxy']
 ];
 
@@ -346,7 +346,7 @@ describe('MASQUE and the chain front', () => {
   });
 
   it('requires a private key and offers both carriers', () => {
-    const empty = node('masque', {});
+    const empty = emptyNode('masque');
     expect(empty.network).toBe('h2');
     expect(empty['remote-dns-resolve']).toBe('true');
     expect(manualInvalid(empty)).toContain('private-key');
