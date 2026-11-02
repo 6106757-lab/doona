@@ -281,7 +281,7 @@ export function manualFields(f: NodeFields): ManualField[] {
   const fields: ManualField[] = [];
   const add = (key: string, more: Omit<ManualField, 'key'> = {}) => fields.push({key, ...more});
   if (['vmess', 'vless', 'tuic', 'juicity', 'socks5'].includes(p)) add('username', {required: p !== 'socks5'});
-  if (!['vmess', 'vless'].includes(p)) add('password', {required: p !== 'socks5'});
+  if (!['vmess', 'vless', 'masque'].includes(p)) add('password', {required: p !== 'socks5'});
   if (p === 'ss') add('method', {options: shadowsocksMethods});
   if (p === 'vmess') add('method', {options: vmessMethods});
   const security = securityOptions(p);

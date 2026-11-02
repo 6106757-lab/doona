@@ -7,6 +7,7 @@ const node = (protocol: Protocol, over: Record<string, string>) => ({...emptyNod
 // The links honk's share-link parser reads: each row is a form state and the exact link it produces.
 const links: [string, Protocol, Record<string, string>, string][] = [
   ['socks5', 'socks5', {port: '1080', username: 'user', password: 'pw'}, 'socks5://user:pw@example.com:1080#hk-01'],
+  ['masque', 'masque', {}, 'masque://example.com:443?network=h2&mtu=1280&remote-dns-resolve=true#hk-01'],
   ['ss', 'ss', {port: '8388', method: 'aes-256-gcm', password: 'pw'}, 'ss://YWVzLTI1Ni1nY206cHc=@example.com:8388#hk-01'],
   ['trojan tcp', 'trojan', {password: 'pw', sni: 'example.com'}, 'trojan://pw@example.com:443?security=tls&type=tcp&sni=example.com#hk-01'],
   [
