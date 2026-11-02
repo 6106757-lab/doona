@@ -2368,6 +2368,8 @@ export interface components {
         /** @description The group's own configured options, patched through PATCH /groups/{group_id}/config. For an option the engine supports, null means the group sets no value of its own and the engine's inheritance and defaults apply. Engine-only options go in a nested x-<engine> member, for example config["x-dae"].check_addresses; GET reports these members and they are not patch targets. Other unlisted keys are not allowed. */
         GroupConfig: {
             default_member_id: string | null;
+            /** @description The outbound the group's members dial through first (a node, a group or direct). Null means the group sets no detour of its own. */
+            detour: string | null;
             final_outbound: string | null;
             /** @description The one health-check URL. Engines probe this URL only; there is no list of URLs. The value read back may be masked, so it is a MaskedHttpUrl rather than a SafeHttpUrl. */
             check_url: null | components["schemas"]["MaskedHttpUrl"];
@@ -2452,7 +2454,7 @@ export interface components {
         };
         GroupList: components["schemas"]["GroupSummary"][];
         /** @description RFC 6902 operations over the group's policy and config, applied in order. Bounded by resources.groups.max_patch_operations. Members an operation object does not define are ignored (RFC 6902 §4). */
-        JsonPatch: (components["schemas"]["PolicyPatch"] | components["schemas"]["MemberIdPatch"] | components["schemas"]["OutboundPatch"] | components["schemas"]["CheckUrlPatch"] | components["schemas"]["PositiveIntegerPatch"] | components["schemas"]["TolerancePatch"] | components["schemas"]["IdleTimeoutPatch"] | components["schemas"]["InterruptPatch"] | components["schemas"]["RemovePatch"] | components["schemas"]["CopyMovePatch"])[];
+        JsonPatch: (components["schemas"]["PolicyPatch"] | components["schemas"]["MemberIdPatch"] | components["schemas"]["OutboundPatch"] | components["schemas"]["DetourPatch"] | components["schemas"]["CheckUrlPatch"] | components["schemas"]["PositiveIntegerPatch"] | components["schemas"]["TolerancePatch"] | components["schemas"]["IdleTimeoutPatch"] | components["schemas"]["InterruptPatch"] | components["schemas"]["RemovePatch"] | components["schemas"]["CopyMovePatch"])[];
         PolicyPatch: {
             /** @enum {string} */
             op: "add" | "replace" | "test";
@@ -2472,6 +2474,13 @@ export interface components {
             op: "add" | "replace" | "test";
             /** @constant */
             path: "/config/final_outbound";
+            value: string | null;
+        };
+        DetourPatch: {
+            /** @enum {string} */
+            op: "add" | "replace" | "test";
+            /** @constant */
+            path: "/config/detour";
             value: string | null;
         };
         CheckUrlPatch: {
@@ -2511,7 +2520,7 @@ export interface components {
             value: boolean | null;
         };
         /** @enum {string} */
-        MutableGroupPath: "/policy" | "/config/default_member_id" | "/config/final_outbound" | "/config/check_url" | "/config/check_interval" | "/config/tolerance" | "/config/idle_timeout" | "/config/interrupt_connections";
+        MutableGroupPath: "/policy" | "/config/default_member_id" | "/config/final_outbound" | "/config/detour" | "/config/check_url" | "/config/check_interval" | "/config/tolerance" | "/config/idle_timeout" | "/config/interrupt_connections";
         RemovePatch: {
             /** @constant */
             op: "remove";

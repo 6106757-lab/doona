@@ -6,6 +6,7 @@ import type {Group} from '../src/api/model';
 export function groupConfig(kind: Group['policy']['kind']): Group['config'] {
   return {
     default_member_id: null,
+    detour: null,
     final_outbound: null,
     check_url: null,
     check_interval: 30,
@@ -23,6 +24,7 @@ export function groupCapabilities(kind: Group['policy']['kind']): Group['capabil
       'policy',
       'default_member_id',
       'final_outbound',
+      'detour',
       ...(kind === 'selector' ? [] : (['check_url', 'idle_timeout'] as const)),
       'tolerance',
       'interrupt_connections'

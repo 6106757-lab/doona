@@ -184,13 +184,14 @@ export function writeGroupConfig(text: string, name: string, update: Pick<Group,
     .filter(entry => entry.name === name)
     .at(-1)!;
   // The API's default_member_id and final_outbound are the native `default` member tag and `final` outbound.
-  const {default_member_id, final_outbound, ...config} = update.config;
+  const {default_member_id, final_outbound, detour, ...config} = update.config;
   const member = update.members.find(member => member.id === default_member_id)?.name ?? null;
   text = writeGroupEntry(text, name, {
     filters: entry.filters,
     policy: update.policy.native,
     default: nameText(member, entry.default),
-    final: nameText(final_outbound, entry.final)
+    final: nameText(final_outbound, entry.final),
+    detour: nameText(detour, entry.detour)
   });
   const {blocks, tokens} = scanConfig(text);
   const block = blocks
