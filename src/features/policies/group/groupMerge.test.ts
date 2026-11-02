@@ -5,7 +5,7 @@ import {mergeGroupRetry, type GroupFields} from './groupMerge';
 const declare = (fields: string) => `group {\n  office {\n${fields}  }\n}\n`;
 const entry = (text: string): GroupEntry => readGroupEntries(text)[0];
 const opened = declare("    filter: name('hk-01')\n    policy: select\n    default: hk-01\n    interrupt_connections: true\n");
-const mine: GroupFields = {filters: ["name('hk-01')"], policy: 'select', default: 'hk-01', final: null, interrupt: 'true'};
+const mine: GroupFields = {filters: ["name('hk-01')"], policy: 'select', default: 'hk-01', final: null, detour: null, interrupt: 'true'};
 const routes = ['default', 'final'] as const;
 
 it('merges edits to different fields, keeping the one changed on disk', () => {
