@@ -168,27 +168,28 @@ describe('nodeLink', () => {
 
 // The fields the standard form shows per protocol and choice, in order, after the server address and port.
 const shown: [string, Protocol, Record<string, string>, string][] = [
-  ['socks5', 'socks5', {}, 'username password'],
-  ['ss', 'ss', {}, 'password method plugin'],
-  ['trojan', 'trojan', {}, 'password security sni insecure type'],
-  ['trojan ws', 'trojan', {type: 'ws'}, 'password security sni insecure type transportHost path'],
-  ['trojan grpc', 'trojan', {type: 'grpc'}, 'password security sni insecure type serviceName'],
-  ['trojan xhttp', 'trojan', {type: 'xhttp'}, 'password security sni insecure type transportHost path mode'],
-  ['trojan reality', 'trojan', {security: 'reality'}, 'password security sni insecure pbk sid spx type'],
-  ['vless', 'vless', {}, 'username security flow sni insecure type'],
-  ['vless ws', 'vless', {type: 'ws', flow: 'xtls-rprx-vision'}, 'username security sni insecure type transportHost path'],
-  ['vless grpc', 'vless', {type: 'grpc'}, 'username security sni insecure type serviceName'],
-  ['vless xhttp', 'vless', {type: 'xhttp'}, 'username security sni insecure type transportHost path mode'],
-  ['vless reality', 'vless', {security: 'reality'}, 'username security flow sni insecure pbk sid spx type'],
-  ['vmess xhttp', 'vmess', {type: 'xhttp'}, 'username method security type transportHost path mode'],
-  ['vless without security', 'vless', {security: 'none'}, 'username security type'],
-  ['vmess', 'vmess', {}, 'username method security type'],
-  ['vmess tls', 'vmess', {security: 'tls'}, 'username method security sni insecure type'],
-  ['hysteria2', 'hysteria2', {}, 'password sni insecure obfs'],
-  ['hysteria2 obfs', 'hysteria2', {obfs: 'salamander'}, 'password sni insecure obfs obfs-password'],
-  ['tuic', 'tuic', {}, 'username password sni insecure congestion_control'],
-  ['anytls', 'anytls', {}, 'password sni insecure'],
-  ['juicity', 'juicity', {}, 'username password sni insecure']
+  ['socks5', 'socks5', {}, 'username password dialer-proxy'],
+  ['ss', 'ss', {}, 'password method plugin dialer-proxy'],
+  ['trojan', 'trojan', {}, 'password security sni insecure type dialer-proxy'],
+  ['trojan ws', 'trojan', {type: 'ws'}, 'password security sni insecure type transportHost path dialer-proxy'],
+  ['trojan grpc', 'trojan', {type: 'grpc'}, 'password security sni insecure type serviceName dialer-proxy'],
+  ['trojan xhttp', 'trojan', {type: 'xhttp'}, 'password security sni insecure type transportHost path mode dialer-proxy'],
+  ['trojan reality', 'trojan', {security: 'reality'}, 'password security sni insecure pbk sid spx type dialer-proxy'],
+  ['vless', 'vless', {}, 'username security flow sni insecure type dialer-proxy'],
+  ['vless ws', 'vless', {type: 'ws', flow: 'xtls-rprx-vision'}, 'username security sni insecure type transportHost path dialer-proxy'],
+  ['vless grpc', 'vless', {type: 'grpc'}, 'username security sni insecure type serviceName dialer-proxy'],
+  ['vless xhttp', 'vless', {type: 'xhttp'}, 'username security sni insecure type transportHost path mode dialer-proxy'],
+  ['vless reality', 'vless', {security: 'reality'}, 'username security flow sni insecure pbk sid spx type dialer-proxy'],
+  ['vmess xhttp', 'vmess', {type: 'xhttp'}, 'username method security type transportHost path mode dialer-proxy'],
+  ['vless without security', 'vless', {security: 'none'}, 'username security type dialer-proxy'],
+  ['vmess', 'vmess', {}, 'username method security type dialer-proxy'],
+  ['vmess tls', 'vmess', {security: 'tls'}, 'username method security sni insecure type dialer-proxy'],
+  ['hysteria2', 'hysteria2', {}, 'password sni insecure obfs dialer-proxy'],
+  ['hysteria2 obfs', 'hysteria2', {obfs: 'salamander'}, 'password sni insecure obfs obfs-password dialer-proxy'],
+  ['tuic', 'tuic', {}, 'username password sni insecure congestion_control dialer-proxy'],
+  ['anytls', 'anytls', {}, 'password sni insecure dialer-proxy'],
+  ['juicity', 'juicity', {}, 'username password sni insecure dialer-proxy']
+  ['masque', 'masque', {}, 'sni insecure network private-key public-key ip ipv6 mtu remote-dns-resolve dns dialer-proxy']
 ];
 
 describe('manualFields', () => {
@@ -315,5 +316,41 @@ describe('manualInvalid and manualLink', () => {
     const filled = {password: 'pw', type: 'tcp', path: '/ws', serviceName: 'svc', pbk: 'AAAA', obfs: 'salamander'};
     expect(manualLink(node('trojan', filled))).toBe('trojan://pw@example.com:443?security=tls&type=tcp#hk-01');
     expect(manualLink(node('trojan', {...filled, type: 'grpc'}))).toBe('trojan://pw@example.com:443?security=tls&type=grpc&serviceName=svc#hk-01');
+  });
+});
+
+describe('MASQUE and the chain front', () => {
+  it('round-trips a MASQUE node through the manual link', () => {
+    const filled = node('masque', {
+      host: '162.159.192.1',
+      'private-key': 'PRIVATE',
+      'public-key': 'PUBLIC',
+      ip: '172.16.0.2/32',
+      ipv6: '2606:4700::1/128',
+      mtu: '1280',
+      'remote-dns-resolve': 'true',
+      dns: '1.1.1.1,8.8.8.8',
+      sni: 'www.cloudflare.com',
+      network: 'h3',
+      'dialer-proxy': 'Qianzhi'
+    });
+    const link = manualLink(filled);
+    expect(link.startsWith('masque://162.159.192.1:443?')).toBe(true);
+    expect(manualInvalid(filled)).toEqual([]);
+    const {fields} = parseNodeLink(link);
+    expect(fields.network).toBe('h3');
+    expect(fields['private-key']).toBe('PRIVATE');
+    expect(fields.ip).toBe('172.16.0.2/32');
+    expect(fields.sni).toBe('www.cloudflare.com');
+    expect(fields['dialer-proxy']).toBe('Qianzhi');
+  });
+
+  it('requires a private key and offers both carriers', () => {
+    const empty = node('masque', {});
+    expect(empty.network).toBe('h2');
+    expect(empty['remote-dns-resolve']).toBe('true');
+    expect(manualInvalid(empty)).toContain('private-key');
+    expect(manualFields(empty).find(field => field.key === 'network')?.options).toEqual(['h2', 'h3']);
+    expect(manualFields(node('vless', {})).some(field => field.key === 'dialer-proxy')).toBe(true);
   });
 });

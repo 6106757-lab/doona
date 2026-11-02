@@ -1,7 +1,7 @@
-export const protocols = ['vmess', 'vless', 'hysteria2', 'ss', 'trojan', 'tuic', 'anytls', 'socks5', 'juicity'] as const;
+export const protocols = ['vmess', 'vless', 'hysteria2', 'ss', 'trojan', 'tuic', 'anytls', 'socks5', 'juicity', 'masque'] as const;
 export type Protocol = (typeof protocols)[number];
 export const isProtocol = (value: string): value is Protocol => (protocols as readonly string[]).includes(value);
-const protocolNames: Partial<Record<Protocol, string>> = {ss: 'Shadowsocks', hysteria2: 'Hysteria2', anytls: 'AnyTLS', juicity: 'Juicity'};
+const protocolNames: Partial<Record<Protocol, string>> = {ss: 'Shadowsocks', hysteria2: 'Hysteria2', anytls: 'AnyTLS', juicity: 'Juicity', masque: 'MASQUE'};
 export const protocolName = (protocol: Protocol) => protocolNames[protocol] ?? protocol.toUpperCase();
 export type NodeFields = Record<string, string> & {protocol: Protocol; host: string; port: string; username: string; password: string; name: string};
 export type NodeDocument = {original: string; initial: NodeFields; query: string; json?: Record<string, unknown>; tail: string};
@@ -18,7 +18,8 @@ export function emptyNode(protocol: Protocol = 'vless'): NodeFields {
     name: '',
     security: ['vless', 'trojan', 'anytls'].includes(protocol) ? 'tls' : 'none',
     type: 'tcp',
-    method: protocol === 'vmess' ? 'auto' : 'aes-128-gcm'
+    method: protocol === 'vmess' ? 'auto' : 'aes-128-gcm',
+    ...(protocol === 'masque' ? {network: 'h2', mtu: '1280', 'remote-dns-resolve': 'true'} : {})
   };
 }
 const aliases: Record<string, string[]> = {
@@ -134,7 +135,9 @@ export function parseNodeLink(original: string): {document: NodeDocument; fields
     // Unknown query options remain in the document, but cannot replace URI credentials.
     for (const [key, value] of params)
       if (!['protocol', 'port', 'username', 'password', 'name', 'method'].includes(key)) fields[key === 'host' ? 'transportHost' : key] = value;
+    // `network` is MASQUE's carrier, not a transport alias, so its own key must survive.
     for (const [key, names] of Object.entries(aliases)) {
+      if (protocol === 'masque' && key === 'type') continue;
       const found = names.find(name => params.get(name));
       if (found) fields[key] = params.get(found)!;
     }
@@ -240,7 +243,8 @@ export function nodeLink(fields: NodeFields, document?: NodeDocument): string {
   return `${fields.protocol}://${authority}${params.size ? `?${params}` : ''}${fields.name ? `#${enc(fields.name)}` : ''}${same ? (document?.tail ?? '') : ''}`;
 }
 // `flag` is the value a ticked checkbox writes; `range` bounds a whole number.
-export type ManualField = {key: string; options?: string[]; flag?: string; required?: boolean; range?: [number, number]};
+// `choices: 'outbounds'` is a picker over the nodes and groups the page knows, filled by the form.
+export type ManualField = {key: string; options?: string[]; flag?: string; required?: boolean; range?: [number, number]; choices?: 'outbounds'};
 const uuidProtocols = ['vmess', 'vless', 'tuic', 'juicity'];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const shadowsocksMethods = [
@@ -255,6 +259,8 @@ export const vmessMethods = ['auto', 'aes-128-gcm'];
 export const congestionControls = ['cubic', 'bbr', 'new_reno'];
 export const obfsTypes = ['', 'salamander'];
 export const transports = ['tcp', 'ws', 'grpc', 'xhttp'];
+// honk reads `h2` as the HTTP/2 carrier and `h3` as the QUIC one; both are offered even where the build supports only h2.
+export const masqueCarriers = ['h2', 'h3'];
 export const ssPlugins = ['', 'v2ray-plugin', 'obfs-local'];
 const packetEncodings = ['auto', 'none', 'xudp', 'uot-v2'];
 const muxModes = ['off', 'h2mux', 'xray'];
@@ -265,7 +271,8 @@ export const securityOptions = (protocol: Protocol) =>
   protocol === 'trojan' ? ['tls', 'reality'] : protocol === 'vless' ? ['none', 'tls', 'reality'] : protocol === 'vmess' ? ['none', 'tls'] : undefined;
 // Whether the node carries a TLS handshake, so the form asks for its SNI.
 export const usesTls = (f: NodeFields) =>
-  !['ss', 'socks5'].includes(f.protocol) && (f.security !== 'none' || ['tuic', 'juicity', 'hysteria2', 'anytls'].includes(f.protocol));
+  !['ss', 'socks5'].includes(f.protocol) &&
+  (f.security !== 'none' || ['tuic', 'juicity', 'hysteria2', 'anytls', 'masque'].includes(f.protocol));
 // XTLS flow rides only on VLESS over TCP with TLS or REALITY.
 const flowOffered = (f: NodeFields) => f.protocol === 'vless' && f.type === 'tcp' && f.security !== 'none';
 // The fields the form shows after the server address and port, for the node as filled in so far: which credentials,
@@ -305,6 +312,18 @@ export function manualFields(f: NodeFields): ManualField[] {
     if (f.obfs) add('obfs-password');
   }
   if (p === 'tuic') add('congestion_control', {options: congestionControls});
+  if (p === 'masque') {
+    add('network', {options: masqueCarriers});
+    add('private-key', {required: true});
+    add('public-key');
+    add('ip');
+    add('ipv6');
+    add('mtu', {range: [576, 65535]});
+    add('remote-dns-resolve', {options: ['true', 'false']});
+    add('dns');
+  }
+  // honk reads `dialer-proxy` on any node: the front the node's own dial goes through.
+  add('dialer-proxy', {choices: 'outbounds'});
   return fields;
 }
 // The options honk reads beyond manualFields, for the node as filled in so far. Each applies only where honk's share-link parser

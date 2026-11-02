@@ -183,6 +183,11 @@ export function useNodesPage({go, query}: PageProps) {
   const isComplete = useCompleteness(sources);
   const declared = useMemo(() => declaredSubscriptions(sources), [sources]);
   const groupsEverywhere = useMemo(() => [...new Set(sources.flatMap(item => readGroupEntries(item.content ?? '').map(entry => entry.name)))], [sources]);
+  // The front a node may dial through: any node the engine reports and any group the sources declare.
+  const detourChoices = useMemo(
+    () => [...new Set([...(nodeList ?? []).map(node => node.name), ...groupsEverywhere])].sort((a, b) => a.localeCompare(b)),
+    [nodeList, groupsEverywhere]
+  );
   const subscriptionEdit = useSubscriptionEditor({
     dialog: dialog?.kind === 'editProvider' ? dialog : null,
     form,
@@ -689,6 +694,7 @@ export function useNodesPage({go, query}: PageProps) {
     batch,
     batchErrors,
     joinChoices,
+    detourChoices,
     joinPicked,
     setJoinPicked: (next: string[]) => {
       if (submitting.current !== dialog) setJoinPick(next);

@@ -20,7 +20,16 @@ const labels: Record<string, Key> = {
   serviceName: 'nodes.manual.service',
   obfs: 'nodes.manual.obfs',
   'obfs-password': 'nodes.manual.obfsPassword',
-  congestion_control: 'nodes.manual.congestion'
+  congestion_control: 'nodes.manual.congestion',
+  network: 'nodes.manual.network',
+  'private-key': 'nodes.manual.privateKey',
+  'public-key': 'nodes.manual.publicKey',
+  ip: 'nodes.manual.tunnelIp',
+  ipv6: 'nodes.manual.tunnelIpv6',
+  mtu: 'nodes.manual.mtu',
+  'remote-dns-resolve': 'nodes.manual.remoteDns',
+  dns: 'nodes.manual.dns',
+  'dialer-proxy': 'nodes.manual.dialerProxy'
 };
 // Protocol terms and option names that honk's links spell out stay as they are: a field without a label here is named by its key.
 const terms: Record<string, string> = {alpn: 'ALPN', spx: 'SpiderX', ech_config: 'ECH config'};
@@ -32,6 +41,7 @@ export function ManualFields({
   nameError,
   linkError,
   isDisabled,
+  outbounds,
   onChange
 }: {
   draft: NodeFields;
@@ -39,15 +49,28 @@ export function ManualFields({
   nameError?: string;
   linkError?: string;
   isDisabled?: boolean;
+  outbounds: string[];
   onChange: (key: string, value: string) => void;
 }) {
   const t = useT();
   const invalid = manualInvalid(draft);
   const choice = (id: string) => ({id, label: id === '' ? t('ui.none') : id});
   const advanced = advancedFields(draft);
-  const field = ({key, options, flag, required, range}: ManualField) => {
+  const field = ({key, options, flag, required, range, choices}: ManualField) => {
     const uuid = key === 'username' && draft.protocol !== 'socks5';
     const label = labels[uuid ? 'uuid' : key] ? t(labels[uuid ? 'uuid' : key]) : (terms[key] ?? key);
+    // Every node can name its chain front: any node or group the page knows, or none.
+    if (choices === 'outbounds')
+      return (
+        <LabeledSelect
+          key={key}
+          label={label}
+          items={['', ...outbounds.filter(name => name !== draft.name)].map(choice)}
+          value={draft[key] ?? ''}
+          isDisabled={isDisabled}
+          onChange={value => onChange(key, value)}
+        />
+      );
     return options ? (
       <LabeledSelect
         key={key}

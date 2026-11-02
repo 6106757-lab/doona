@@ -65,6 +65,7 @@ export function Nodes(props: PageProps) {
     setDraftField,
     newName,
     joinChoices,
+    detourChoices,
     joinPicked,
     setJoinPicked,
     xhttp,
@@ -284,6 +285,7 @@ export function Nodes(props: PageProps) {
                           <ManualFields
                             draft={draft}
                             link={nodeValue}
+                            outbounds={detourChoices}
                             nameError={nodeNameError ?? undefined}
                             linkError={nodeLinkError ?? undefined}
                             isDisabled={pending}
