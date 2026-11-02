@@ -28,13 +28,7 @@ export function mergeGroupRetry(
   // Interruption compares as a flag, so `'true'` and `true` agree.
   const flag = (value: string | null) => (value === null ? null : unquote(value) === 'true');
   const read = (from: GroupEntry, key: Key) =>
-    JSON.stringify(
-      key === 'default' || key === 'final' || key === 'detour'
-        ? routeValue(from[key])
-        : key === 'interrupt'
-          ? flag(from[key])
-          : from[key]
-    );
+    JSON.stringify(key === 'default' || key === 'final' || key === 'detour' ? routeValue(from[key]) : key === 'interrupt' ? flag(from[key]) : from[key]);
   const own = (key: Key) => JSON.stringify(key === 'interrupt' ? flag(mine[key]) : mine[key]);
   // A field already holding the value read again is not written, so it keeps the spelling there.
   const changed = keys.filter(key => own(key) !== read(opened, key) && own(key) !== read(current, key));

@@ -50,7 +50,14 @@ export function groupNameProblem(name: string, taken: ReadonlySet<string>): 'inv
 }
 
 // Optional fields are written as given; undefined leaves the line alone and null removes it.
-export type GroupEntryUpdate = {filters: string[]; policy: string | null; default?: string | null; final?: string | null; detour?: string | null; interrupt?: string | null};
+export type GroupEntryUpdate = {
+  filters: string[];
+  policy: string | null;
+  default?: string | null;
+  final?: string | null;
+  detour?: string | null;
+  interrupt?: string | null;
+};
 export function writeGroupEntry(text: string, name: string, next: GroupEntryUpdate): string {
   const {blocks, tokens} = scanConfig(text);
   const sections = blocks.filter(block => block.name === 'group');
