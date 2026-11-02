@@ -271,8 +271,7 @@ export const securityOptions = (protocol: Protocol) =>
   protocol === 'trojan' ? ['tls', 'reality'] : protocol === 'vless' ? ['none', 'tls', 'reality'] : protocol === 'vmess' ? ['none', 'tls'] : undefined;
 // Whether the node carries a TLS handshake, so the form asks for its SNI.
 export const usesTls = (f: NodeFields) =>
-  !['ss', 'socks5'].includes(f.protocol) &&
-  (f.security !== 'none' || ['tuic', 'juicity', 'hysteria2', 'anytls', 'masque'].includes(f.protocol));
+  !['ss', 'socks5'].includes(f.protocol) && (f.security !== 'none' || ['tuic', 'juicity', 'hysteria2', 'anytls', 'masque'].includes(f.protocol));
 // XTLS flow rides only on VLESS over TCP with TLS or REALITY.
 const flowOffered = (f: NodeFields) => f.protocol === 'vless' && f.type === 'tcp' && f.security !== 'none';
 // The fields the form shows after the server address and port, for the node as filled in so far: which credentials,
