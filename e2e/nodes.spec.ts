@@ -19,6 +19,13 @@ const rows = (table: Locator) => table.locator('[role=rowgroup]:last-child [role
 const sourceGrid = (page: import('@playwright/test').Page) => page.locator('.rp-cardview');
 const sourceCards = (page: import('@playwright/test').Page) => sourceGrid(page).getByRole('row');
 
+// Editing a node opens in the manual fields; these cases exercise the raw link editor.
+const editLinkTab = async (page: import('@playwright/test').Page, name: string) => {
+  const dialog = page.getByRole('dialog', {name});
+  await dialog.getByRole('tab', {name: 'Link', exact: true}).click();
+  return dialog;
+};
+
 test('nodes sort by name, latency and protocol, and filter by group and protocol', async ({page}) => {
   await page.goto('/#/nodes?provider=inline');
   const table = page.locator('.rp-table').first();
@@ -145,7 +152,7 @@ for (const transport of ['xhttp', 'splithttp'])
     await expect(page.getByRole('menu', {name: 'Node actions', exact: true})).toBeVisible();
     releaseConfig();
     await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-    const edit = page.getByRole('dialog', {name: 'Edit node edge'});
+    const edit = await editLinkTab(page, 'Edit node edge');
     await expect(edit.getByLabel('Node link', {exact: true})).toHaveValue(link);
     const updated = link.replace('%2Fx%252Fy', '%2Fnew%252Fpath');
     await edit.getByLabel('Node link', {exact: true}).fill(`  ${updated}  `);
@@ -171,7 +178,7 @@ test('a link longer than 8192 characters is blocked on create but saved exactly 
   await add.getByRole('button', {name: 'Cancel', exact: true}).click();
   await nodeRows(page).filter({hasText: 'hk-01'}).getByRole('button', {name: 'Node actions', exact: true}).click();
   await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-  const edit = page.getByRole('dialog', {name: 'Edit node hk-01'});
+  const edit = await editLinkTab(page, 'Edit node hk-01');
   const original = await edit.getByLabel('Node link', {exact: true}).inputValue();
   await edit.getByLabel('Node link', {exact: true}).fill(link);
   await expect(edit.getByRole('button', {name: 'Apply', exact: true})).toBeEnabled();
@@ -262,7 +269,7 @@ for (const [code, refused] of [
     const row = nodeRows(page).filter({hasText: 'jp-01'});
     await row.getByRole('button', {name: 'Node actions', exact: true}).click();
     await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-    const edit = page.getByRole('dialog', {name: 'Edit node jp-01'});
+    const edit = await editLinkTab(page, 'Edit node jp-01');
     const original = await edit.getByLabel('Node link', {exact: true}).inputValue();
     await edit.getByRole('button', {name: 'XHTTP options'}).click();
     await edit.getByLabel('Padding bytes (xPaddingBytes)').fill('0-10');
@@ -317,7 +324,7 @@ test('an unnamed XHTTP header protects an existing node draft until the raw link
   await page.goto('/#/nodes?provider=inline');
   await nodeRows(page).filter({hasText: 'jp-01'}).getByRole('button', {name: 'Node actions', exact: true}).click();
   await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-  const edit = page.getByRole('dialog', {name: 'Edit node jp-01'});
+  const edit = await editLinkTab(page, 'Edit node jp-01');
   const link = edit.getByLabel('Node link', {exact: true});
   const original = await link.inputValue();
   await edit.getByRole('button', {name: 'XHTTP options'}).click();
@@ -344,7 +351,7 @@ test('empty node edit fields explain why applying is disabled', async ({page}) =
   await page.goto('/#/nodes?provider=inline');
   await nodeRows(page).filter({hasText: 'jp-01'}).getByRole('button', {name: 'Node actions', exact: true}).click();
   await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-  const edit = page.getByRole('dialog', {name: 'Edit node jp-01'});
+  const edit = await editLinkTab(page, 'Edit node jp-01');
   const apply = edit.getByRole('button', {name: 'Apply', exact: true});
   await edit.getByLabel('Name', {exact: true}).fill('');
   await expect(apply).toBeDisabled();
@@ -371,7 +378,7 @@ test('a node preflight keeps shared source actions busy after its dialog closes'
   await page.goto('/#/nodes?provider=inline');
   await nodeRows(page).filter({hasText: 'jp-01'}).getByRole('button', {name: 'Node actions', exact: true}).click();
   await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-  const edit = page.getByRole('dialog', {name: 'Edit node jp-01'});
+  const edit = await editLinkTab(page, 'Edit node jp-01');
   const link = edit.getByLabel('Node link', {exact: true});
   const updated = (await link.inputValue()).replace('%2Fxhttp%2F', '%2Fupdated%2F');
   await link.fill(updated);
@@ -1937,7 +1944,7 @@ test('node editing writes in place and renames group references', async ({page})
   const row = nodeRows(page).filter({hasText: 'hk-01'});
   await row.getByRole('button', {name: 'Node actions', exact: true}).click();
   await page.getByRole('menuitem', {name: 'Edit…', exact: true}).click();
-  const dialog = page.getByRole('dialog', {name: 'Edit node hk-01'});
+  const dialog = await editLinkTab(page, 'Edit node hk-01');
   await dialog.getByLabel('Name', {exact: true}).fill('edge one');
   await dialog.getByLabel('Node link', {exact: true}).fill('socks5://127.0.0.1:1080');
   await dialog.getByRole('button', {name: 'Apply', exact: true}).click();
