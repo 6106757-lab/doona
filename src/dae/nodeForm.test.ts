@@ -318,6 +318,14 @@ describe('manualInvalid and manualLink', () => {
     expect(manualLink(node('trojan', filled))).toBe('trojan://pw@example.com:443?security=tls&type=tcp#hk-01');
     expect(manualLink(node('trojan', {...filled, type: 'grpc'}))).toBe('trojan://pw@example.com:443?security=tls&type=grpc&serviceName=svc#hk-01');
   });
+
+  it('keeps query options the form does not show when an edited node is saved from the manual fields', () => {
+    const original = 'trojan://pw@example.com:443?security=tls&type=tcp&unknown-option=kept#hk-01';
+    const {document, fields} = parseNodeLink(original);
+    const link = manualLink({...fields, port: '8443'}, document);
+    expect(link).toContain('unknown-option=kept');
+    expect(link).toContain('example.com:8443');
+  });
 });
 
 describe('MASQUE and the chain front', () => {

@@ -423,9 +423,10 @@ export function manualInvalid(f: NodeFields): string[] {
   ];
 }
 // The link of the fields manualFields shows, or '' while one is invalid; a field the form hides now is left out however it was filled.
-export function manualLink(f: NodeFields): string {
+// An edited node passes the document its link was parsed from, so query options the form does not show survive a save.
+export function manualLink(f: NodeFields, document?: NodeDocument): string {
   if (manualInvalid(f).length) return '';
   const fields: NodeFields = {...emptyNode(f.protocol), name: f.name, host: f.host, port: f.port};
   for (const {key} of [...manualFields(f), ...advancedFields(f)]) fields[key] = f[key];
-  return nodeLink(fields);
+  return nodeLink(fields, document?.initial.protocol === f.protocol ? document : undefined);
 }

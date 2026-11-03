@@ -1012,7 +1012,7 @@
   "nodes.edit": "Edit {name}",
   "nodes.editAction": "Edit…",
   "nodes.editMissing": "This subscription is no longer in its config file",
-  "nodes.editNodeHelp": "Updates the node link in its source. Renaming also updates exact node filters, default and final in that source.",
+  "nodes.editNodeHelp": "Edit the parameters one by one on the Manual tab, or edit the node link directly on the Link tab. Renaming also updates exact node filters, default and final in that source.",
   "nodes.editNodeMissing": "This node is no longer in its source or its share link has changed.",
   "nodes.editNodeTitle": "Edit node {name}",
   "nodes.editOptions": "Other options, kept as written",

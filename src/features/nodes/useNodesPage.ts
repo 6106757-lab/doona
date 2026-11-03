@@ -62,7 +62,7 @@ import {diagnosticMessage, oneLine} from '../../i18n/backend';
 import {nodesTabs} from './tabs';
 import type {SubscriptionDraft, SubscriptionFieldSet} from './SubscriptionFields';
 import {parseNodeLinks} from './batch';
-import {emptyNode, isProtocol, manualLink, settle, type NodeFields} from '../../dae/nodeForm';
+import {emptyNode, isProtocol, manualInvalid, manualLink, parseNodeLink, settle, type NodeDocument, type NodeFields} from '../../dae/nodeForm';
 
 const blank: ProviderForm = {name: '', value: '', interval: '', agent: '', cache: null, route: ''};
 
@@ -85,11 +85,15 @@ export function useNodesPage({go, query}: PageProps) {
   const t = useT();
   const [dialog, setDialog] = useState<NodeDialog | null>(null);
   const [form, setForm] = useState<ProviderForm>(blank);
-  // The add dialog takes a pasted link or the fields of a node; each tab keeps its input, and the link is what is added.
+  // The add and edit dialogs both take a pasted link or the fields of a node; each tab keeps its input,
+  // and the link is what is written. Editing opens the manual tab with the node's own link parsed into fields.
   const [addMode, setAddMode] = useState<'link' | 'manual'>('link');
   const [draft, setDraft] = useState<NodeFields>(emptyNode);
-  const byFields = dialog?.kind === 'node' && addMode === 'manual';
-  const nodeValue = byFields ? manualLink(draft) : form.value;
+  // The link the edited node was opened with: its unshown query options must survive a save from the manual tab.
+  const [draftDoc, setDraftDoc] = useState<NodeDocument | null>(null);
+  const nodeDialog = dialog?.kind === 'node' || dialog?.kind === 'editNode';
+  const byFields = nodeDialog && addMode === 'manual';
+  const nodeValue = byFields ? manualLink(draft, draftDoc ?? undefined) : form.value;
   const [headers, setHeaders] = useState<XhttpFields['headers'] | null>(null);
   const xhttp = useMemo(() => readXhttp(nodeValue), [nodeValue]);
   const headerRows = headers ?? xhttp?.headers ?? [];
@@ -131,6 +135,7 @@ export function useNodesPage({go, query}: PageProps) {
       setJoinPick([]);
       setAddMode('link');
       setDraft(emptyNode());
+      setDraftDoc(null);
       setBatchProgress(null);
       setRefusedName(null);
       setRefusedLink(null);
@@ -138,7 +143,19 @@ export function useNodesPage({go, query}: PageProps) {
       setProblem(null);
       if (next.kind === 'editProvider')
         setForm({...blank, name: next.entry.tag, value: next.entry.url, agent: next.entry.ua ?? '', route: next.entry.route ?? ''});
-      if (next.kind === 'editNode') setForm({...blank, name: next.entry.name, value: next.entry.link});
+      if (next.kind === 'editNode') {
+        setForm({...blank, name: next.entry.name, value: next.entry.link});
+        // A node the user added by fields opens in those same fields, not the raw link editor.
+        // A link the form cannot describe (unsupported protocol) keeps the link tab.
+        try {
+          const {document, fields} = parseNodeLink(next.entry.link);
+          setDraft({...fields, name: next.entry.name});
+          setDraftDoc(document);
+          setAddMode('manual');
+        } catch {
+          /* Leave the link editor in place for links the form cannot parse. */
+        }
+      }
       setDialog(next);
     },
     [session]
@@ -584,7 +601,7 @@ export function useNodesPage({go, query}: PageProps) {
   const formValid = batch
     ? !batch.error && batch.rows.some(row => !row.error)
     : dialog?.kind === 'editNode'
-      ? nodeState!.valid && !headerError
+      ? nodeState!.valid && !headerError && (!byFields || manualInvalid(draft).length === 0)
       : dialog?.kind === 'editProvider'
         ? subscriptionEdit.valid
         : dialog?.kind === 'provider'
@@ -711,18 +728,35 @@ export function useNodesPage({go, query}: PageProps) {
     },
     addMode,
     setAddMode: (next: typeof addMode) => {
-      if (submitting.current !== dialog) setAddMode(next);
+      if (submitting.current === dialog) return;
+      // Editing re-parses the link as it stands into the fields; the add dialog keeps each tab's
+      // own input (its submit already reads the generated link from `nodeValue`).
+      if (next === 'manual' && addMode !== 'manual' && dialog?.kind === 'editNode') {
+        try {
+          const {document, fields} = parseNodeLink(form.value);
+          setDraft({...fields, name: form.name.trim()});
+          setDraftDoc(document);
+        } catch {
+          /* An unparseable link belongs in the link tab. */
+          return;
+        }
+      }
+      setAddMode(next);
     },
     draft,
     nodeValue,
     setDraftField: (key: string, value: string) => {
       // Another protocol keeps the name and address; its credentials and options start from its own defaults.
       if (submitting.current === dialog) return;
-      setDraft(previous =>
+      const next =
         key === 'protocol'
-          ? {...emptyNode(isProtocol(value) ? value : undefined), name: previous.name, host: previous.host, port: previous.port}
-          : settle({...previous, [key]: value})
-      );
+          ? {...emptyNode(isProtocol(value) ? value : undefined), name: draft.name, host: draft.host, port: draft.port}
+          : settle({...draft, [key]: value});
+      setDraft(next);
+      const link = manualLink(next, draftDoc ?? undefined);
+      // In the edit dialog the link is the single source of truth for validation and saving; an
+      // incomplete manual form leaves the last complete link in place, and formValid refuses to save.
+      if (link && dialog?.kind === 'editNode') setForm(previous => ({...previous, name: next.name.trim(), value: link}));
     },
     xhttp: !batch && xhttp && {...xhttp, headers: headerRows},
     headerDuplicates,
@@ -740,7 +774,9 @@ export function useNodesPage({go, query}: PageProps) {
     formReason: batch
       ? batch.error
       : dialog?.kind === 'editNode'
-        ? (nodeState!.reason ?? headerError)
+        ? byFields && manualInvalid(draft).length
+          ? t('nodes.manual.incomplete')
+          : (nodeState!.reason ?? headerError)
         : dialog?.kind === 'editProvider'
           ? // A name error is shown on its field alone.
             subscriptionEdit.reason

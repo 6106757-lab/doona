@@ -199,6 +199,37 @@ export function Nodes(props: PageProps) {
       )}
     </>
   );
+  // Both the add and the edit dialog offer the link and the field editor. Editing starts on the fields
+  // (useNodesPage parses the node's link into them) so its parameters can be changed one by one.
+  const nodeTabs = dialog && (dialog.kind === 'node' || dialog.kind === 'editNode') && (
+    <Tabs
+      label={dialog.kind === 'node' ? t('nodes.addNode') : t('nodes.editNodeTitle', {name: dialog.entry.name})}
+      value={addMode}
+      onChange={id => setAddMode(id === 'manual' ? 'manual' : 'link')}
+      items={[
+        {id: 'link', label: t('nodes.manual.link'), content: <div className="rp-list">{linkTab}</div>},
+        {
+          id: 'manual',
+          label: t('nodes.manual.fields'),
+          content: (
+            <div className="rp-list">
+              <Suspense fallback={null}>
+                <ManualFields
+                  draft={draft}
+                  link={nodeValue}
+                  outbounds={detourChoices}
+                  nameError={nodeNameError ?? undefined}
+                  linkError={nodeLinkError ?? undefined}
+                  isDisabled={pending}
+                  onChange={setDraftField}
+                />
+              </Suspense>
+            </div>
+          )
+        }
+      ]}
+    />
+  );
   return (
     <div className="rp-page">
       {tabs.length > 0 ? (
@@ -267,37 +298,7 @@ export function Nodes(props: PageProps) {
         )}
         {(dialog?.kind === 'node' || dialog?.kind === 'editNode') && (
           <Form id={dialogForm} className="rp-list" onSubmit={send}>
-            {dialog.kind === 'editNode' ? (
-              linkTab
-            ) : (
-              <Tabs
-                label={t('nodes.addNode')}
-                value={addMode}
-                onChange={id => setAddMode(id === 'manual' ? 'manual' : 'link')}
-                items={[
-                  {id: 'link', label: t('nodes.manual.link'), content: <div className="rp-list">{linkTab}</div>},
-                  {
-                    id: 'manual',
-                    label: t('nodes.manual.fields'),
-                    content: (
-                      <div className="rp-list">
-                        <Suspense fallback={null}>
-                          <ManualFields
-                            draft={draft}
-                            link={nodeValue}
-                            outbounds={detourChoices}
-                            nameError={nodeNameError ?? undefined}
-                            linkError={nodeLinkError ?? undefined}
-                            isDisabled={pending}
-                            onChange={setDraftField}
-                          />
-                        </Suspense>
-                      </div>
-                    )
-                  }
-                ]}
-              />
-            )}
+            {nodeTabs}
             {dialog.kind === 'node' && joinChoices.length > 0 && (
               <SearchMultiSelect
                 label={t('nodes.addToGroup')}

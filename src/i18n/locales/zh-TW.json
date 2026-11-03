@@ -874,7 +874,7 @@
   "nodes.edit": "編輯 {name}",
   "nodes.editAction": "編輯…",
   "nodes.editMissing": "設定檔中已找不到此訂閱",
-  "nodes.editNodeHelp": "更新來源中的節點連結。重新命名時，一併更新同一來源中的精確節點篩選、default 與 final。",
+  "nodes.editNodeHelp": "可在「手動」頁逐項修改參數，或在「連結」頁直接編輯節點連結。重新命名時，一併更新同一來源中的精確節點篩選、default 與 final。",
   "nodes.editNodeMissing": "來源中的節點已移除，或分享連結已變更。",
   "nodes.editNodeTitle": "編輯節點 {name}",
   "nodes.editOptions": "其他選項（保持原樣）",

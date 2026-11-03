@@ -874,7 +874,7 @@
   "nodes.edit": "编辑 {name}",
   "nodes.editAction": "编辑…",
   "nodes.editMissing": "配置文件中已找不到此订阅",
-  "nodes.editNodeHelp": "更新来源中的节点链接。重命名时，同时更新同一来源中的精确节点筛选、default 和 final。",
+  "nodes.editNodeHelp": "可在「手动」页逐项修改参数，或在「链接」页直接编辑节点链接。重命名时，同时更新同一来源中的精确节点筛选、default 和 final。",
   "nodes.editNodeMissing": "来源中的节点已移除，或分享链接已更改。",
   "nodes.editNodeTitle": "编辑节点 {name}",
   "nodes.editOptions": "其他选项（保持原样）",
