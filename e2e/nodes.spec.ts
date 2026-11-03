@@ -20,9 +20,10 @@ const sourceGrid = (page: import('@playwright/test').Page) => page.locator('.rp-
 const sourceCards = (page: import('@playwright/test').Page) => sourceGrid(page).getByRole('row');
 
 // Editing a node opens in the manual fields; these cases exercise the raw link editor.
+// The link tab is always first, so this also works for the localised dialog titles.
 const editLinkTab = async (page: import('@playwright/test').Page, name: string) => {
   const dialog = page.getByRole('dialog', {name});
-  await dialog.getByRole('tab', {name: 'Link', exact: true}).click();
+  await dialog.getByRole('tab').first().click();
   return dialog;
 };
 
@@ -306,7 +307,7 @@ for (const lang of ['zh-CN', 'zh-TW'] as const)
           .getByRole('button', {name: t('nodes.actions'), exact: true})
           .click();
         await page.getByRole('menuitem', {name: t('nodes.editAction'), exact: true}).click();
-        const edit = page.getByRole('dialog', {name: t('nodes.editNodeTitle', {name: 'jp-01'})});
+        const edit = await editLinkTab(page, t('nodes.editNodeTitle', {name: 'jp-01'}));
         const updated = 'vless://demo@example.com:443?security=tls&type=xhttp&extra=%7B%22xPaddingBytes%22%3A%220-10%22%7D#jp-01';
         await edit.getByLabel(t('nodes.link'), {exact: true}).fill(updated);
         await edit.getByRole('button', {name: t('policy.save'), exact: true}).click();
