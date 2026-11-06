@@ -742,6 +742,8 @@
   "flow.tab.records": "Records",
   "flow.topology": "Connection topology",
   "flow.topologyNote": "The paths from rules or devices to outbounds and nodes, with the number of flows kept.",
+  "flow.treeDnsIntercept": "Local DNS handling",
+  "flow.treeDnsNoNode": "DNS queries answered locally, without a proxy node",
   "flow.treeFewer": {
     "one": "Show only the first {n} item",
     "other": "Show only the first {n} items"

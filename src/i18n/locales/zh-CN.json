@@ -646,6 +646,8 @@
   "flow.tab.records": "记录",
   "flow.topology": "连接拓扑",
   "flow.topologyNote": "按规则或设备查看出站与节点的路径，以及保留的流程数。",
+  "flow.treeDnsIntercept": "本地 DNS 处理",
+  "flow.treeDnsNoNode": "DNS 查询由本机应答，无需代理节点",
   "flow.treeFewer": "仅显示前 {n} 个项目",
   "flow.treeFlows": "{n} 条流程",
   "flow.treeFrom": "← {names}",

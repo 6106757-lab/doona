@@ -2,7 +2,7 @@ import {expect, it} from 'vitest';
 import {createMockApi} from '../../../mock';
 import type {GroupSummary} from '../../api/model';
 import {isBuiltinOutbound} from '../../dae/vocab';
-import {flowsThrough, nodeNames, pinnedLabel, routingTree, treeIndex, treeRows} from './map';
+import {DNS_OUTBOUND, flowsThrough, nodeNames, pinnedLabel, routingTree, treeIndex, treeRows} from './map';
 
 it('lays the config out as a tree and weights it with retained flows', async () => {
   const api = createMockApi();
@@ -167,6 +167,39 @@ it('seen by device, the leaves are client addresses joined to outbounds by flows
   const {rows, at} = treeRows(tree);
   expect(rows).toBeGreaterThanOrEqual(tree.leaves.length);
   for (const leaf of tree.leaves) expect(at.has(leaf.id)).toBe(true);
+});
+
+it('reads a locally answered DNS query as DNS handling, not an unknown node', async () => {
+  const api = createMockApi();
+  const base = (await api.flows()).flows[0];
+  const input = {
+    src: '172.20.1.159:53000',
+    dst: '172.20.1.1:53',
+    domain: null,
+    domain_source: null,
+    pid: null,
+    process_path: null,
+    src_mac: null,
+    ingress: 'lan' as const,
+    domain_rule_ids: null,
+    dscp: 0,
+    mark: 0
+  };
+  const query = {...base, id: 'dns-query', outbound: 'proxy', chain: [], chain_source: 'unknown' as const, network: 'udp' as const, input};
+  const tree = routingTree([query], [], [], undefined);
+  const dns = tree.outbounds.find(outbound => outbound.kind === 'dns')!;
+  expect(dns.id).toBe('outbound:' + DNS_OUTBOUND);
+  expect(dns.count).toBe(1);
+  // No proxy node was ever selected, so the node column invents none.
+  expect(tree.nodes).toEqual([]);
+  expect(tree.links.some(link => link.target === dns.id && link.count === 1)).toBe(true);
+  expect(flowsThrough([query], dns.id, undefined)).toEqual([query]);
+  expect(pinnedLabel(dns.id, [], new Map(), String, 'Local DNS handling')).toBe('Local DNS handling');
+  // A different port, or a recorded selection, keeps the outbound the backend reported.
+  const other = {...query, id: 'other', input: {...input, dst: '1.2.3.4:443'}};
+  expect(routingTree([other], [], [], undefined).outbounds.some(outbound => outbound.kind === 'dns')).toBe(false);
+  const selected = {...query, id: 'selected', chain_source: 'evaluation' as const, chain: ['node-1']};
+  expect(routingTree([selected], [], [], undefined).outbounds.some(outbound => outbound.kind === 'dns')).toBe(false);
 });
 
 it('keeps missing stages distinct from backend values literally named unknown', async () => {

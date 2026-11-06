@@ -1,14 +1,14 @@
 import type {FlowSummary, GroupSummary, Node, RoutingRule, RuleList} from '../../api/model';
 import {readTag, tagId} from '../shared/taggedId';
 import {isBuiltinOutbound} from '../../dae/vocab';
-import {healthMillis, preferredHealth, resolveSelectedLeaf, sourceIp} from '../../api/selectors';
+import {addressPort, healthMillis, preferredHealth, resolveSelectedLeaf, sourceIp} from '../../api/selectors';
 
 export type TreeBy = 'rule' | 'client';
 export type TreeItem = {id: string; label: string; count: number; unknown?: boolean};
 type TreeLeaf = TreeItem & {outbound: string | null; must: boolean};
 type TreeGroup = {name: string; kind: GroupSummary['policy']['kind']; policy: string};
 // A group's selection may be another group; `groups` is the whole chain, the first entry being the outbound itself.
-type TreeOutbound = TreeItem & {kind: 'direct' | 'block' | 'group' | 'unknown'; groups: TreeGroup[]; node: string | null};
+type TreeOutbound = TreeItem & {kind: 'direct' | 'block' | 'group' | 'dns' | 'unknown'; groups: TreeGroup[]; node: string | null};
 type TreeNode = TreeItem & {latency?: number; unavailable: boolean};
 // A link with no count is one the config implies before any flow used it.
 export type TreeLink = {source: string; target: string; count: number};
@@ -22,6 +22,21 @@ export const nodeNames = (nodes: Node[]): NodeNames => new Map(nodes.map(n => [n
 // A flow joins the listed rule only when the listed generation routed it; flows from another or an unknown
 // generation keep a separate historical entry under their recorded expression.
 const HISTORICAL = '\u0000';
+// Reserved outbound identity: a DNS query the local resolver answered. The kernel still records the
+// traffic rule's outbound for the packet, but the query never leaves through a group or a node.
+// '@' cannot appear in a configured group name, so this tile can never collide with a real outbound.
+export const DNS_OUTBOUND = '@local-dns-query';
+// Only a flow with no recorded selection can be one: a query to the resolver's port is consumed by
+// the DNS engine, so `chain_source` stays "unknown" and `chain` stays empty.
+function isDnsQuery(flow: FlowSummary): boolean {
+  return (
+    flow.outbound !== null &&
+    !isBuiltinOutbound(flow.outbound) &&
+    flow.chain.length === 0 &&
+    flow.chain_source === 'unknown' &&
+    addressPort(flow.input?.dst ?? undefined) === '53'
+  );
+}
 function ruleKey(flow: FlowSummary, generation: string | undefined): string | undefined {
   if (!flow.rule_id) return undefined;
   return flow.rule_generation_id !== null && flow.rule_generation_id === generation ? flow.rule_id : flow.rule_id + HISTORICAL + flow.rule_expression;
@@ -35,9 +50,10 @@ function stagePart(flow: FlowSummary, stage: Stage, names: NodeNames, generation
     case 'rule':
       return flow.rule_expression ? {label: flow.rule_expression, unknown: false, key: ruleKey(flow, generation)} : {label: 'unknown', unknown: true};
     case 'outbound':
+      if (isDnsQuery(flow)) return {label: DNS_OUTBOUND, unknown: false};
       return flow.outbound ? {label: flow.outbound, unknown: false} : {label: 'unknown', unknown: true};
     case 'node': {
-      if (isBuiltinOutbound(flow.outbound)) return null;
+      if (isDnsQuery(flow) || isBuiltinOutbound(flow.outbound)) return null;
       const leaf = flow.chain.at(-1) ?? null;
       return leaf ? {label: names.get(leaf) ?? leaf, unknown: false, key: leaf} : {label: 'unknown', unknown: true};
     }
@@ -59,7 +75,13 @@ export function flowsThrough(flows: FlowSummary[], id: string, rules: RuleList |
   });
 }
 
-export function pinnedLabel(id: string, rules: RoutingRule[], names: NodeNames, label: (name: string | null) => string): string {
+export function pinnedLabel(
+  id: string,
+  rules: RoutingRule[],
+  names: NodeNames,
+  label: (name: string | null) => string,
+  dnsLabel?: string
+): string {
   const tag = readTag(id, stages);
   if (!tag || tag.value === '') return label(null);
   const {kind: stage, value: key} = tag;
@@ -67,7 +89,7 @@ export function pinnedLabel(id: string, rules: RoutingRule[], names: NodeNames, 
     return key.includes(HISTORICAL) ? key.slice(key.indexOf(HISTORICAL) + 1) : (rules.find(rule => rule.rule_id === key)?.expression ?? key);
   if (stage === 'node') return names.get(key) ?? key;
   if (stage === 'client') return key;
-  return label(key);
+  return key === DNS_OUTBOUND ? (dnsLabel ?? key) : label(key);
 }
 
 export function routingTree(flows: FlowSummary[], groups: GroupSummary[], nodes: Node[], rules: RuleList | undefined, by: TreeBy = 'rule'): RoutingTree {
@@ -104,13 +126,14 @@ export function routingTree(flows: FlowSummary[], groups: GroupSummary[], nodes:
     const id = stageId('outbound', {label: name, unknown});
     let entry = outboundItems.get(id);
     if (entry) return entry;
-    const group = unknown ? undefined : groupsByName.get(name);
-    const selected = unknown
+    const dns = !unknown && name === DNS_OUTBOUND;
+    const group = unknown || dns ? undefined : groupsByName.get(name);
+    const selected = unknown || dns
       ? {groups: [], member: null}
       : resolveSelectedLeaf(name, group?.selection.tcp_member_id ? 'tcp' : 'udp', groupsByName, byId, nodesById);
     const chain: TreeGroup[] = selected.groups.map(group => ({name: group.name, kind: group.policy.kind, policy: group.policy.native}));
     const leaf = selected.member;
-    const kind = unknown ? 'unknown' : isBuiltinOutbound(name) ? name : chain.length ? 'group' : 'unknown';
+    const kind = dns ? 'dns' : unknown ? 'unknown' : isBuiltinOutbound(name) ? name : chain.length ? 'group' : 'unknown';
     entry = {id, label: name, count: 0, unknown: unknown || undefined, kind, groups: chain, node: leaf && nodeItem(leaf, names.get(leaf) ?? leaf).id};
     outboundItems.set(id, entry);
     if (entry.node) link(id, entry.node);

@@ -65,6 +65,36 @@ it('prepares tile labels with configured destinations, nested policies and unkno
   expect(map.state).toBe('ready');
 });
 
+it('names locally answered DNS queries instead of showing an unknown node', async () => {
+  const api = createMockApi();
+  const base = (await api.flows()).flows[0];
+  const query = {
+    ...base,
+    id: 'dns-query',
+    outbound: 'proxy',
+    chain: [],
+    chain_source: 'unknown' as const,
+    input: {
+      src: '172.20.1.159:53000',
+      dst: '[2001:db8::1]:53',
+      domain: null,
+      domain_source: null,
+      pid: null,
+      process_path: null,
+      src_mac: null,
+      ingress: 'lan' as const,
+      domain_rule_ids: null,
+      dscp: 0,
+      mark: 0
+    }
+  };
+  const tiles = tileViews(routingTree([query], [], [], undefined), t, 'en');
+  const dns = tiles.find(tile => tile.stage === 'outbound')!;
+  expect(dns.name).toBe(t('flow.treeDnsIntercept'));
+  expect(dns.notes.map(note => note.text)).toContain(t('flow.treeDnsNoNode'));
+  expect(tiles.some(tile => tile.name === t('ui.unknown'))).toBe(false);
+});
+
 it('preserves input identifiers that collide with translated enum values in every language', async () => {
   const api = createMockApi();
   const list = await api.flows();

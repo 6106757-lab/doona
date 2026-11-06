@@ -140,12 +140,15 @@ export function tileViews(tree: RoutingTree, t: Translator, lang: Lang): TileVie
     ...tree.outbounds.map<Bare>(outbound => ({
       id: outbound.id,
       stage: 'outbound',
-      name: unknown(outbound, outboundLabel(outbound.label, t)),
-      notes: [
-        ...outbound.groups.slice(1).map(group => ({text: '› ' + group.name})),
-        ...outbound.groups.slice(-1).map(group => ({text: groupPolicyText({kind: group.kind, native: group.policy}, t).label})),
-        ...(outbound.kind === 'group' && !outbound.node ? [{text: t('flow.treeNoNode')}] : [])
-      ],
+      name: outbound.kind === 'dns' ? t('flow.treeDnsIntercept') : unknown(outbound, outboundLabel(outbound.label, t)),
+      notes:
+        outbound.kind === 'dns'
+          ? [{text: t('flow.treeDnsNoNode')}]
+          : [
+              ...outbound.groups.slice(1).map(group => ({text: '› ' + group.name})),
+              ...outbound.groups.slice(-1).map(group => ({text: groupPolicyText({kind: group.kind, native: group.policy}, t).label})),
+              ...(outbound.kind === 'group' && !outbound.node ? [{text: t('flow.treeNoNode')}] : [])
+            ],
       count: outbound.count
     })),
     ...tree.nodes.map<Bare>(node => ({
