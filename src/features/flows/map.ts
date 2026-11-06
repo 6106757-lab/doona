@@ -75,13 +75,7 @@ export function flowsThrough(flows: FlowSummary[], id: string, rules: RuleList |
   });
 }
 
-export function pinnedLabel(
-  id: string,
-  rules: RoutingRule[],
-  names: NodeNames,
-  label: (name: string | null) => string,
-  dnsLabel?: string
-): string {
+export function pinnedLabel(id: string, rules: RoutingRule[], names: NodeNames, label: (name: string | null) => string, dnsLabel?: string): string {
   const tag = readTag(id, stages);
   if (!tag || tag.value === '') return label(null);
   const {kind: stage, value: key} = tag;
@@ -128,9 +122,8 @@ export function routingTree(flows: FlowSummary[], groups: GroupSummary[], nodes:
     if (entry) return entry;
     const dns = !unknown && name === DNS_OUTBOUND;
     const group = unknown || dns ? undefined : groupsByName.get(name);
-    const selected = unknown || dns
-      ? {groups: [], member: null}
-      : resolveSelectedLeaf(name, group?.selection.tcp_member_id ? 'tcp' : 'udp', groupsByName, byId, nodesById);
+    const selected =
+      unknown || dns ? {groups: [], member: null} : resolveSelectedLeaf(name, group?.selection.tcp_member_id ? 'tcp' : 'udp', groupsByName, byId, nodesById);
     const chain: TreeGroup[] = selected.groups.map(group => ({name: group.name, kind: group.policy.kind, policy: group.policy.native}));
     const leaf = selected.member;
     const kind = dns ? 'dns' : unknown ? 'unknown' : isBuiltinOutbound(name) ? name : chain.length ? 'group' : 'unknown';
