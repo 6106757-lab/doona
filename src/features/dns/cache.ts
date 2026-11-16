@@ -35,7 +35,7 @@ export function cacheCard(list: DnsCacheList | undefined, locale: string, t: Tra
           }
         : null,
     coverage: t('dns.chart.coverage', {
-      kinds: [coverage.positive && t('dns.chart.positive'), coverage.negative && t('dns.chart.negative')].filter(Boolean).join(t('ui.listSeparator')),
+      kinds: coverage.positive ? t('dns.chart.positive') : '',
       persistent: t(coverage.persistent ? 'dns.chart.persistent' : 'dns.chart.memoryOnly')
     })
   };

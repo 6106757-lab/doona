@@ -8,7 +8,7 @@ const t: Translator = (key, params) => translate('en', key, params);
 const list = (usage?: DnsCacheList['usage']) =>
   ({
     observed_at: '2026-09-23T12:00:00Z',
-    coverage: {positive: true, negative: false, persistent: false},
+    coverage: {positive: true, persistent: false},
     entries: [],
     total: 322,
     next_cursor: null,

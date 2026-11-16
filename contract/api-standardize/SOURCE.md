@@ -1,6 +1,6 @@
 Pin: api-standardize e6b0dbab5599689d965bc18a71be67c809d99d0f + honk 3ae980fed extension
 
-SHA-256: 15dc31a2f9d1e09e51a5226ada6f16a5c749791a4def6efadd288e196573c24c
+SHA-256: 635a611ae1e96ce2fdd93d44f97e5a664e2a333cd950e87366748d2050f31375
 
 openapi.yaml combines api-standardize `source/openapi.yaml` at commit
 e6b0dbab5599689d965bc18a71be67c809d99d0f with the unchanged
@@ -12,5 +12,7 @@ applied to the previous vendored fixture, plus the group config detour option
 not a new honk fixture commit or the contract shipped in doona beta.17.
 The bundle also adds MaskedHttpUrl, the type of a check_url read back with listener
 secrets masked; honk's fixture mirrors it byte for byte.
+The negative cache coverage and entry kind were dropped to match honk removing
+its negative cache.
 
 Regenerate src/api/types.ts with `pnpm gen:api`.

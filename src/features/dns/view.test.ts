@@ -149,9 +149,9 @@ it('names the route source and the cache entry a delete button removes', () => {
 });
 
 it('reports missing cache coverage and omits warnings when all coverage is present', () => {
-  const missing = {...dnsCache, coverage: {positive: false, negative: false, persistent: false}};
-  expect(dnsCacheView(missing, capabilities.resources, null, 'en', t).coverage.map(badge => badge.id)).toEqual(['positive', 'negative', 'persistent']);
-  const complete = {...dnsCache, coverage: {positive: true, negative: true, persistent: true}};
+  const missing = {...dnsCache, coverage: {positive: false, persistent: false}};
+  expect(dnsCacheView(missing, capabilities.resources, null, 'en', t).coverage.map(badge => badge.id)).toEqual(['positive', 'persistent']);
+  const complete = {...dnsCache, coverage: {positive: true, persistent: true}};
   expect(dnsCacheView(complete, capabilities.resources, null, 'en', t).coverage).toEqual([]);
 });
 

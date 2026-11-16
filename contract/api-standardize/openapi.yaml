@@ -365,7 +365,6 @@ paths:
                         flush: true
                         entry_kinds:
                           - positive
-                          - negative
                       dns_log:
                         available: true
                         min_records: 64
@@ -5978,7 +5977,6 @@ paths:
                     observed_at: '2026-08-15T12:00:00Z'
                     coverage:
                       positive: true
-                      negative: true
                       persistent: false
                     entries:
                       - entry_id: dns-entry-01HZX4K8W5
@@ -8202,7 +8200,6 @@ components:
                     type: string
                     enum:
                       - positive
-                      - negative
             dns_log:
               type: object
               required:
@@ -12864,12 +12861,9 @@ components:
       type: object
       required:
         - positive
-        - negative
         - persistent
       properties:
         positive:
-          type: boolean
-        negative:
           type: boolean
         persistent:
           type: boolean

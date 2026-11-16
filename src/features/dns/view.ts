@@ -119,14 +119,11 @@ export function dnsCacheView(
     readable: !!cache?.available && cache.read === true,
     fields: [[t('dns.entries'), data ? formatNumber(data.total, locale) : '—']] as Array<[string, string]>,
     coverage: data
-      ? (['positive', 'negative', 'persistent'] as const)
+      ? (['positive', 'persistent'] as const)
           .filter(key => !data.coverage[key])
           .map(key => ({
             id: key,
-            text:
-              key === 'persistent'
-                ? t('dns.memoryOnly')
-                : t('ui.valuePair', {label: t(key === 'positive' ? 'dns.positive' : 'dns.negative'), value: t('dns.notCovered')})
+            text: key === 'persistent' ? t('dns.memoryOnly') : t('ui.valuePair', {label: t('dns.positive'), value: t('dns.notCovered')})
           }))
       : [],
     // What the pattern deletion can use: one request for an exact name, or the entries one by one.

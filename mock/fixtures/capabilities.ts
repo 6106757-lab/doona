@@ -136,7 +136,7 @@ export const capabilities: Capabilities = {
         global_requests_per_minute: 120
       }
     },
-    dns_cache: {available: true, read: true, delete_entry: true, delete_name: true, flush: true, entry_kinds: ['positive', 'negative']},
+    dns_cache: {available: true, read: true, delete_entry: true, delete_name: true, flush: true, entry_kinds: ['positive']},
     operations: {available: true, retention_seconds: 300},
     reload: {available: true},
     suspend: {available: true},

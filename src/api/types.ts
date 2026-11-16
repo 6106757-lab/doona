@@ -1632,7 +1632,7 @@ export interface components {
                     delete_entry?: boolean;
                     delete_name?: boolean;
                     flush?: boolean;
-                    entry_kinds?: ("positive" | "negative")[];
+                    entry_kinds?: "positive"[];
                 };
                 dns_log?: {
                     available: boolean;
@@ -3221,7 +3221,6 @@ export interface components {
         };
         DnsCacheCoverage: {
             positive: boolean;
-            negative: boolean;
             persistent: boolean;
         };
         DnsCacheEntry: {

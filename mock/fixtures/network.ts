@@ -266,7 +266,7 @@ export function connectionFixtures() {
 }
 export const dnsCache: DnsCacheList = {
   observed_at: observedAt,
-  coverage: {positive: true, negative: true, persistent: false},
+  coverage: {positive: true, persistent: false},
   total: 5,
   next_cursor: null,
   entries: [

@@ -83,7 +83,7 @@ it('walks the cache at one page size and starts over without a cursor once a sna
   const page = (ids: string[], next_cursor: string | null) =>
     ({
       observed_at: '2026-09-25T10:00:00Z',
-      coverage: {positive: true, negative: true, persistent: false},
+      coverage: {positive: true, persistent: false},
       total: 3,
       next_cursor,
       entries: ids.map(entry)
@@ -118,7 +118,7 @@ it.each([
   const page = (id: string, next_cursor: string | null) =>
     ({
       observed_at: '2026-09-25T10:00:00Z',
-      coverage: {positive: true, negative: true, persistent: false},
+      coverage: {positive: true, persistent: false},
       total: 3,
       next_cursor,
       entries: [{entry_id: id, domain: id + '.', type: 'A', class: 'IN', status: 'NOERROR', expires_at: '2026-09-25T10:05:00Z', stale_until: null}]
