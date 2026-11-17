@@ -6,6 +6,12 @@ This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 Entries live in [changes/](changes/) until release.
 
+## [0.1.0-rc.8] - 2026-11-17
+
+### Fixed
+
+- The DNS cache page no longer reports negative answers as uncovered: honk no longer caches them, so the coverage warnings and the cache chart drop the negative entry.
+
 ## [0.1.0-rc.6] - 2026-11-03
 
 ### Added
@@ -1045,7 +1051,8 @@ Entries live in [changes/](changes/) until release.
 
 - Keep table columns and action cells visible and prevent cards and controls from overflowing.
 
-[Unreleased]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.6...HEAD
+[Unreleased]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.8...HEAD
+[0.1.0-rc.8]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.6...v0.1.0-rc.8
 [0.1.0-rc.6]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.4...v0.1.0-rc.6
 [0.1.0-rc.4]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.3...v0.1.0-rc.4
 [0.1.0-rc.3]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.2...v0.1.0-rc.3

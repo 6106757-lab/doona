@@ -86,7 +86,7 @@ Available features depend on the backend’s capabilities and configuration; see
 
 ## Two editions
 
-doona lite is a preview in testing in 0.1.0-rc.6; its pages and behaviour may change. Both editions connect to the same honk with the same administrator credentials.
+doona lite is a preview in testing in 0.1.0-rc.8; its pages and behaviour may change. Both editions connect to the same honk with the same administrator credentials.
 
 | Area               | Standard edition                                          | doona lite (preview)                               |
 | ------------------ | --------------------------------------------------------- | -------------------------------------------------- |
@@ -120,9 +120,9 @@ honk handles proxying; see the [honk node reference](https://github.com/daeunive
 
 ## Latest release
 
-[0.1.0-rc.6](CHANGELOG.md) has 31 entries: 12 additions, 3 changes, 14 fixes and 2 internal notes.
+[0.1.0-rc.8](CHANGELOG.md) has 1 entry: 1 fix.
 
-This release adds a Manual tab to the Add node dialog that can join nodes to groups in the same step, MASQUE as a manual protocol and advanced XHTTP options. Manually chosen policy groups fold like automatic ones and member tiles name their subscription. The policy dialog gains a chain-front picker, so a node or group can leave through a front without editing the configuration by hand; Dark Reader no longer recolours the page and first-load skeletons match the loaded layout.
+This release follows honk dropping the negative cache: the DNS cache page no longer reports unanswered resolutions as uncovered, and the coverage warnings and cache chart drop the negative entry.
 
 ## Documentation
 
