@@ -112,7 +112,7 @@ const definitions = {
       {
         cards: [
           [330, 334],
-          [330, 290]
+          [330, 270]
         ],
         columns: '2fr 1fr'
       }
