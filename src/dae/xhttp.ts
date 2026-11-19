@@ -13,10 +13,21 @@ export type XhttpFields = {
   noGRPCHeader: boolean;
   scMaxEachPostBytes: string;
   scMinPostsIntervalMs: string;
+  xPaddingObfsMode: boolean;
+  xPaddingMethod: string;
+  xPaddingPlacement: string;
+  xPaddingHeader: string;
+  xPaddingKey: string;
   download: XhttpDownload | null;
 };
 export type XhttpChange = Partial<Omit<XhttpFields, 'download'>> & {download?: Partial<XhttpDownload> | null};
 export const xhttpModes = ['auto', 'packet-up', 'stream-up', 'stream-one'];
+// The obfs padding vocabulary honk accepts: method `repeat-x`/`tokenish`, placement one of Xray's seven values.
+export const xPaddingMethods = ['repeat-x', 'tokenish'];
+export const xPaddingPlacements = ['queryInHeader', 'cookie', 'header', 'query', 'path', 'body', 'auto'];
+// The five obfs members of a link's `extra`, and the four that only make sense with the mode on.
+export const xPaddingObfsKeys = ['xPaddingObfsMode', 'xPaddingMethod', 'xPaddingPlacement', 'xPaddingHeader', 'xPaddingKey'] as const;
+export const xPaddingObfsDependentKeys = ['xPaddingMethod', 'xPaddingPlacement', 'xPaddingHeader', 'xPaddingKey'] as const;
 const ranges = ['xPaddingBytes', 'scMaxEachPostBytes', 'scMinPostsIntervalMs'] as const;
 
 type Json = Record<string, unknown>;
@@ -62,6 +73,11 @@ function fields(query: Partial<Record<string, string>>, extra: Json): XhttpField
     noGRPCHeader: extra.noGRPCHeader === true,
     scMaxEachPostBytes: rangeText(extra.scMaxEachPostBytes),
     scMinPostsIntervalMs: rangeText(extra.scMinPostsIntervalMs),
+    xPaddingObfsMode: extra.xPaddingObfsMode === true,
+    xPaddingMethod: text(extra.xPaddingMethod),
+    xPaddingPlacement: text(extra.xPaddingPlacement),
+    xPaddingHeader: text(extra.xPaddingHeader),
+    xPaddingKey: text(extra.xPaddingKey),
     download: download
       ? {
           address: text(download.address),
@@ -145,6 +161,12 @@ export function writeXhttp(link: string, change: XhttpChange): string {
     if (value !== undefined && value !== current[key]) put(extra, key, scalar(value.trim()));
   }
   if (change.noGRPCHeader !== undefined && change.noGRPCHeader !== current.noGRPCHeader) put(extra, 'noGRPCHeader', change.noGRPCHeader);
+  // Obfs padding replaces the Referer padding on the wire; clearing the mode clears the four that only it uses.
+  if (change.xPaddingObfsMode !== undefined && change.xPaddingObfsMode !== current.xPaddingObfsMode) put(extra, 'xPaddingObfsMode', change.xPaddingObfsMode);
+  for (const key of xPaddingObfsDependentKeys) {
+    const value = change[key];
+    if (value !== undefined && value !== current[key]) put(extra, key, value);
+  }
   if (change.headers) {
     // Compare only named rows: a pending row must not remove an explicitly empty headers object.
     const headers = change.headers.map(([name, value]) => [name.trim(), value]).filter(([name]) => name);

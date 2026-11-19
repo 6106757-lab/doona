@@ -1,6 +1,6 @@
 import {useT} from '../../i18n';
 import {Disclosure, LabeledSelect, Switch, TextField, Toolbar} from '../../ui/ui';
-import {xhttpModes, type XhttpChange, type XhttpDownload, type XhttpFields} from '../../dae/xhttp';
+import {xhttpModes, xPaddingMethods, xPaddingPlacements, type XhttpChange, type XhttpDownload, type XhttpFields} from '../../dae/xhttp';
 
 // The controller owns the draft, its validation and the link these fields update.
 export function XhttpOptions({
@@ -69,6 +69,57 @@ export function XhttpOptions({
         placeholder="100-1000"
         onChange={xPaddingBytes => set({xPaddingBytes})}
       />
+      <Switch
+        isSelected={fields.xPaddingObfsMode}
+        isDisabled={isDisabled}
+        description={t('nodes.xhttp.paddingObfsHelp')}
+        onChange={on =>
+          set({
+            xPaddingObfsMode: on,
+            ...(on
+              ? {xPaddingMethod: fields.xPaddingMethod || 'tokenish', xPaddingPlacement: fields.xPaddingPlacement || 'queryInHeader'}
+              : {xPaddingMethod: '', xPaddingPlacement: '', xPaddingHeader: '', xPaddingKey: ''})
+          })
+        }
+      >
+        {t('nodes.xhttp.paddingObfs')}
+      </Switch>
+      {fields.xPaddingObfsMode && (
+        <>
+          <Toolbar className="top">
+            <LabeledSelect
+              label={t('nodes.xhttp.paddingMethod')}
+              items={[...new Set([...xPaddingMethods, fields.xPaddingMethod])].filter(Boolean).map(id => ({id, label: id}))}
+              value={fields.xPaddingMethod}
+              isDisabled={isDisabled}
+              onChange={next => next !== fields.xPaddingMethod && set({xPaddingMethod: next})}
+            />
+            <LabeledSelect
+              label={t('nodes.xhttp.paddingPlacement')}
+              items={[...new Set([...xPaddingPlacements, fields.xPaddingPlacement])].filter(Boolean).map(id => ({id, label: id}))}
+              value={fields.xPaddingPlacement}
+              isDisabled={isDisabled}
+              onChange={next => next !== fields.xPaddingPlacement && set({xPaddingPlacement: next})}
+            />
+          </Toolbar>
+          <Toolbar className="top">
+            <TextField
+              isDisabled={isDisabled}
+              label={t('nodes.xhttp.paddingHeader')}
+              value={fields.xPaddingHeader}
+              spellCheck={false}
+              onChange={xPaddingHeader => set({xPaddingHeader})}
+            />
+            <TextField
+              isDisabled={isDisabled}
+              label={t('nodes.xhttp.paddingKey')}
+              value={fields.xPaddingKey}
+              spellCheck={false}
+              onChange={xPaddingKey => set({xPaddingKey})}
+            />
+          </Toolbar>
+        </>
+      )}
       <TextField
         isDisabled={isDisabled}
         label={t('nodes.xhttp.postBytes')}

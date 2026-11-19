@@ -1,3 +1,5 @@
+import {writeXhttp, xPaddingMethods, xPaddingObfsDependentKeys, xPaddingObfsKeys, xPaddingPlacements, type XhttpChange} from './xhttp';
+
 export const protocols = ['vmess', 'vless', 'hysteria2', 'ss', 'trojan', 'tuic', 'anytls', 'socks5', 'juicity', 'masque'] as const;
 export type Protocol = (typeof protocols)[number];
 export const isProtocol = (value: string): value is Protocol => (protocols as readonly string[]).includes(value);
@@ -164,6 +166,22 @@ export function parseNodeLink(original: string): {document: NodeDocument; fields
     if (fields.insecure !== undefined) fields.insecure = ['true', 'yes', '1', 'on'].includes(fields.insecure.trim().toLowerCase()) ? '1' : '0';
     if (fields.flow === 'xtls-rprx-vision-udp443') fields.flow = 'xtls-rprx-vision';
     if (fields.type === 'splithttp') fields.type = 'xhttp';
+    // The XHTTP obfs padding fields live in the link's `extra` JSON; the form edits them one by one.
+    if (['vless', 'trojan'].includes(protocol!) && fields.type === 'xhttp' && fields.extra) {
+      try {
+        const extra: unknown = JSON.parse(fields.extra);
+        if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
+          const obfs = extra as Record<string, unknown>;
+          fields.xPaddingObfsMode = obfs.xPaddingObfsMode === true ? 'true' : '';
+          fields.xPaddingMethod = typeof obfs.xPaddingMethod === 'string' ? obfs.xPaddingMethod : '';
+          fields.xPaddingPlacement = typeof obfs.xPaddingPlacement === 'string' ? obfs.xPaddingPlacement : '';
+          fields.xPaddingHeader = typeof obfs.xPaddingHeader === 'string' ? obfs.xPaddingHeader : '';
+          fields.xPaddingKey = typeof obfs.xPaddingKey === 'string' ? obfs.xPaddingKey : '';
+        }
+      } catch {
+        // A broken extra stays as it is; honk rejects it on save.
+      }
+    }
     if (protocol === 'ss' && fields.plugin?.includes(';')) {
       const [plugin, ...options] = fields.plugin.split(';');
       fields.plugin = plugin;
@@ -204,8 +222,10 @@ export function nodeLink(fields: NodeFields, document?: NodeDocument): string {
   }
   const params = new URLSearchParams(same ? document?.query : '');
   const core = new Set(['protocol', 'host', 'port', 'username', 'password', 'name', 'method']);
+  // The XHTTP obfs padding fields live in the link's `extra` JSON, never as query parameters.
+  const obfsKeys = new Set<string>(xPaddingObfsKeys);
   for (const [key, value] of Object.entries(fields)) {
-    if (core.has(key) || (same && document?.initial[key] === value)) continue;
+    if (core.has(key) || obfsKeys.has(key) || (same && document?.initial[key] === value)) continue;
     for (const alias of aliases[key] ?? [key]) params.delete(alias === 'transportHost' ? 'host' : alias);
     if (key === 'type' && ['vmess', 'vless'].includes(fields.protocol)) params.delete('obfs');
     if (value) params.set(key === 'transportHost' ? 'host' : key, value);
@@ -240,7 +260,18 @@ export function nodeLink(fields: NodeFields, document?: NodeDocument): string {
     fields.protocol === 'vmess'
       ? encode64(`${fields.method === 'auto' ? 'auto:' : ''}${fields.username}@${host}:${fields.port}`)
       : `${auth ? `${auth}@` : ''}${host}:${fields.port}`;
-  return `${fields.protocol}://${authority}${params.size ? `?${params}` : ''}${fields.name ? `#${enc(fields.name)}` : ''}${same ? (document?.tail ?? '') : ''}`;
+  const link = `${fields.protocol}://${authority}${params.size ? `?${params}` : ''}${fields.name ? `#${enc(fields.name)}` : ''}${same ? (document?.tail ?? '') : ''}`;
+  // A link that is not XHTTP comes back unchanged; an XHTTP one gains or loses the obfs members of its `extra`.
+  // Without the mode the four it uses have no meaning, so they are cleared with it however the fields were filled.
+  const obfsOn = fields.xPaddingObfsMode === 'true';
+  const obfs: XhttpChange = {
+    xPaddingObfsMode: obfsOn,
+    xPaddingMethod: obfsOn ? (fields.xPaddingMethod ?? '') : '',
+    xPaddingPlacement: obfsOn ? (fields.xPaddingPlacement ?? '') : '',
+    xPaddingHeader: obfsOn ? (fields.xPaddingHeader ?? '') : '',
+    xPaddingKey: obfsOn ? (fields.xPaddingKey ?? '') : ''
+  };
+  return writeXhttp(link, obfs);
 }
 // `flag` is the value a ticked checkbox writes; `range` bounds a whole number.
 // `choices: 'outbounds'` is a picker over the nodes and groups the page knows, filled by the form.
@@ -305,6 +336,17 @@ export function manualFields(f: NodeFields): ManualField[] {
     }
     if (f.type === 'grpc') add('serviceName');
     if (f.type === 'xhttp') add('mode', {options: xhttpModes});
+    // Obfs padding is an XHTTP `extra` member, so only VLESS and Trojan links carry it; VMess JSON links
+    // have no field-by-field extra editor anywhere in doona.
+    if (['vless', 'trojan'].includes(p) && f.type === 'xhttp') {
+      add('xPaddingObfsMode', {flag: 'true'});
+      if (f.xPaddingObfsMode === 'true') {
+        add('xPaddingMethod', {options: xPaddingMethods});
+        add('xPaddingPlacement', {options: xPaddingPlacements});
+        add('xPaddingHeader', {required: true});
+        add('xPaddingKey', {required: true});
+      }
+    }
   }
   if (p === 'hysteria2') {
     add('obfs', {options: obfsTypes});
@@ -373,6 +415,17 @@ export function advancedFields(f: NodeFields): ManualField[] {
 // The node with the choices the form no longer offers dropped, such as the flow once the transport leaves TCP.
 export function settle(f: NodeFields): NodeFields {
   const next = {...f};
+  // Obfs padding only rides on a VLESS or Trojan XHTTP link; without the mode the four it uses are dropped,
+  // and with it the method and placement always have a value to send.
+  if (f.type !== 'xhttp' || !['vless', 'trojan'].includes(f.protocol)) {
+    next.xPaddingObfsMode = '';
+    for (const key of xPaddingObfsDependentKeys) next[key] = '';
+  } else if (f.xPaddingObfsMode !== 'true') {
+    for (const key of xPaddingObfsDependentKeys) next[key] = '';
+  } else {
+    if (!next.xPaddingMethod) next.xPaddingMethod = 'tokenish';
+    if (!next.xPaddingPlacement) next.xPaddingPlacement = 'queryInHeader';
+  }
   if (!flowOffered(f)) next.flow = '';
   if (next.flow) {
     for (const key of ['mux', 'padding', 'concurrency', 'xudpConcurrency', 'xudpProxyUDP443']) next[key] = '';
@@ -406,6 +459,13 @@ function advancedInvalid(f: NodeFields, {key, range}: ManualField) {
   if (key === 'alpn') return f.type === 'xhttp' && value.split(',').some(item => item.trim() && item.trim() !== 'h2');
   return key === 'mport' && !hopsValid(value);
 }
+// Whether honk reads a filled obfs value as given: the method and placement must be ones it accepts.
+function obfsInvalid(f: NodeFields, key: string) {
+  if (f.xPaddingObfsMode !== 'true') return false;
+  if (key === 'xPaddingMethod') return !xPaddingMethods.includes(f.xPaddingMethod ?? '');
+  if (key === 'xPaddingPlacement') return !xPaddingPlacements.includes(f.xPaddingPlacement ?? '');
+  return false;
+}
 // The keys of the server address, port and shown fields that are missing or malformed; the name is the caller's.
 export function manualInvalid(f: NodeFields): string[] {
   const port = Number(f.port);
@@ -417,7 +477,8 @@ export function manualInvalid(f: NodeFields): string[] {
         field =>
           (field.required && !f[field.key]) ||
           (field.key === 'username' && uuidProtocols.includes(f.protocol) && f.username && !uuidPattern.test(f.username)) ||
-          advancedInvalid(f, field)
+          advancedInvalid(f, field) ||
+          obfsInvalid(f, field.key)
       )
       .map(field => field.key)
   ];

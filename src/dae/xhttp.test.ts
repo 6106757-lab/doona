@@ -32,6 +32,24 @@ it('rewrites only the changed option and keeps unknown extra members', () => {
   expect(readXhttp(next)!.headers).toEqual([['X-A', 'a+b']]);
 });
 
+it('reads and writes the obfs padding fields and keeps their siblings', () => {
+  const obfs = {xPaddingObfsMode: true, xPaddingMethod: 'tokenish', xPaddingPlacement: 'queryInHeader', xPaddingHeader: 'Referer', xPaddingKey: 'x_padding'};
+  const link = `${base}?type=xhttp&${extra({xmux: {maxConcurrency: '1'}, xPaddingBytes: '100-1000'})}`;
+  expect(readXhttp(link)).toMatchObject({xPaddingObfsMode: false, xPaddingMethod: '', xPaddingPlacement: '', xPaddingHeader: '', xPaddingKey: ''});
+  const next = writeXhttp(link, obfs);
+  expect(decoded(next)).toEqual({xmux: {maxConcurrency: '1'}, xPaddingBytes: '100-1000', ...obfs});
+  expect(readXhttp(next)).toMatchObject(obfs);
+  expect(writeXhttp(next, obfs)).toBe(next);
+});
+
+it('clears the obfs padding fields with the mode and drops the extra once it is empty', () => {
+  const obfs = {xPaddingObfsMode: true, xPaddingMethod: 'tokenish', xPaddingPlacement: 'queryInHeader', xPaddingHeader: 'Referer', xPaddingKey: 'x_padding'};
+  const link = writeXhttp(`${base}?type=xhttp`, obfs);
+  const cleared = writeXhttp(link, {xPaddingObfsMode: false, xPaddingMethod: '', xPaddingPlacement: '', xPaddingHeader: '', xPaddingKey: ''});
+  expect(cleared).toBe(`${base}?type=xhttp`);
+  expect(readXhttp(cleared)).toMatchObject({xPaddingObfsMode: false, xPaddingMethod: '', xPaddingPlacement: '', xPaddingHeader: '', xPaddingKey: ''});
+});
+
 it('moves an edited request field to the query and drops its stale extra copy', () => {
   const link = `${base}?type=xhttp&${extra({path: '/old/', mode: 'packet-up'})}`;
   const next = writeXhttp(link, {path: '/new path/'});

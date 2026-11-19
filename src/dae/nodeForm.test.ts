@@ -30,6 +30,24 @@ const links: [string, Protocol, Record<string, string>, string][] = [
     `vless://${uuid}@example.com:443?security=tls&type=xhttp&sni=example.com&path=%2Fx&host=cdn.example.com&mode=stream-up&encryption=none#hk-01`
   ],
   [
+    'vless xhttp obfs padding',
+    'vless',
+    {
+      username: uuid,
+      sni: 'example.com',
+      type: 'xhttp',
+      path: '/x',
+      transportHost: 'cdn.example.com',
+      mode: 'stream-one',
+      xPaddingObfsMode: 'true',
+      xPaddingMethod: 'tokenish',
+      xPaddingPlacement: 'queryInHeader',
+      xPaddingHeader: 'Referer',
+      xPaddingKey: 'x_padding'
+    },
+    `vless://${uuid}@example.com:443?security=tls&type=xhttp&sni=example.com&path=%2Fx&host=cdn.example.com&mode=stream-one&encryption=none&extra=%7B%22xPaddingObfsMode%22%3Atrue%2C%22xPaddingMethod%22%3A%22tokenish%22%2C%22xPaddingPlacement%22%3A%22queryInHeader%22%2C%22xPaddingHeader%22%3A%22Referer%22%2C%22xPaddingKey%22%3A%22x_padding%22%7D#hk-01`
+  ],
+  [
     'vless tls flow',
     'vless',
     {username: uuid, sni: 'example.com', flow: 'xtls-rprx-vision'},
@@ -152,6 +170,54 @@ describe('nodeLink', () => {
     expect(new Set(links.map(row => row[1]))).toEqual(new Set(protocols));
   });
 
+  it('writes XHTTP obfs padding into extra, never as query parameters', () => {
+    const fields = node('vless', {
+      username: uuid,
+      type: 'xhttp',
+      path: '/x',
+      xPaddingObfsMode: 'true',
+      xPaddingMethod: 'tokenish',
+      xPaddingPlacement: 'queryInHeader',
+      xPaddingHeader: 'Referer',
+      xPaddingKey: 'x_padding'
+    });
+    const link = nodeLink(fields);
+    const query = new URLSearchParams(link.split('?')[1].split('#')[0]);
+    expect(query.get('xPaddingMethod')).toBeNull();
+    expect(query.get('xPaddingObfsMode')).toBeNull();
+    expect(JSON.parse(query.get('extra')!)).toEqual({
+      xPaddingObfsMode: true,
+      xPaddingMethod: 'tokenish',
+      xPaddingPlacement: 'queryInHeader',
+      xPaddingHeader: 'Referer',
+      xPaddingKey: 'x_padding'
+    });
+    expect(parseNodeLink(link).fields).toMatchObject({
+      xPaddingObfsMode: 'true',
+      xPaddingMethod: 'tokenish',
+      xPaddingPlacement: 'queryInHeader',
+      xPaddingHeader: 'Referer',
+      xPaddingKey: 'x_padding'
+    });
+  });
+
+  it('drops the obfs members when the mode is turned off', () => {
+    const original = nodeLink(
+      node('vless', {
+        username: uuid,
+        type: 'xhttp',
+        xPaddingObfsMode: 'true',
+        xPaddingMethod: 'tokenish',
+        xPaddingPlacement: 'queryInHeader',
+        xPaddingHeader: 'Referer',
+        xPaddingKey: 'x_padding'
+      })
+    );
+    const {document, fields} = parseNodeLink(original);
+    // The form clears the four with the mode through settle; the link drops them even when it does not.
+    expect(nodeLink({...fields, xPaddingObfsMode: ''}, document)).toBe(`vless://${uuid}@example.com:443?security=tls&type=xhttp&encryption=none#hk-01`);
+  });
+
   it.each([
     ['auto', 'none'],
     ['auto', 'tls'],
@@ -174,12 +240,18 @@ const shown: [string, Protocol, Record<string, string>, string][] = [
   ['trojan', 'trojan', {}, 'password security sni insecure type dialer-proxy'],
   ['trojan ws', 'trojan', {type: 'ws'}, 'password security sni insecure type transportHost path dialer-proxy'],
   ['trojan grpc', 'trojan', {type: 'grpc'}, 'password security sni insecure type serviceName dialer-proxy'],
-  ['trojan xhttp', 'trojan', {type: 'xhttp'}, 'password security sni insecure type transportHost path mode dialer-proxy'],
+  ['trojan xhttp', 'trojan', {type: 'xhttp'}, 'password security sni insecure type transportHost path mode xPaddingObfsMode dialer-proxy'],
   ['trojan reality', 'trojan', {security: 'reality'}, 'password security sni insecure pbk sid spx type dialer-proxy'],
   ['vless', 'vless', {}, 'username security flow sni insecure type dialer-proxy'],
   ['vless ws', 'vless', {type: 'ws', flow: 'xtls-rprx-vision'}, 'username security sni insecure type transportHost path dialer-proxy'],
   ['vless grpc', 'vless', {type: 'grpc'}, 'username security sni insecure type serviceName dialer-proxy'],
-  ['vless xhttp', 'vless', {type: 'xhttp'}, 'username security sni insecure type transportHost path mode dialer-proxy'],
+  ['vless xhttp', 'vless', {type: 'xhttp'}, 'username security sni insecure type transportHost path mode xPaddingObfsMode dialer-proxy'],
+  [
+    'vless xhttp obfs',
+    'vless',
+    {type: 'xhttp', xPaddingObfsMode: 'true'},
+    'username security sni insecure type transportHost path mode xPaddingObfsMode xPaddingMethod xPaddingPlacement xPaddingHeader xPaddingKey dialer-proxy'
+  ],
   ['vless reality', 'vless', {security: 'reality'}, 'username security flow sni insecure pbk sid spx type dialer-proxy'],
   ['vmess xhttp', 'vmess', {type: 'xhttp'}, 'username method security type transportHost path mode dialer-proxy'],
   ['vless without security', 'vless', {security: 'none'}, 'username security type dialer-proxy'],
@@ -273,7 +345,19 @@ describe('settle', () => {
       {flow: 'xtls-rprx-vision', mux: 'xray', concurrency: '4', packetEncoding: 'uot-v2'},
       {mux: '', concurrency: '', packetEncoding: ''}
     ],
-    ['flow keeps xudp', {flow: 'xtls-rprx-vision', packetEncoding: 'xudp'}, {packetEncoding: 'xudp'}]
+    ['flow keeps xudp', {flow: 'xtls-rprx-vision', packetEncoding: 'xudp'}, {packetEncoding: 'xudp'}],
+    [
+      'obfs padding leaves when the mode is off',
+      {type: 'xhttp', xPaddingMethod: 'tokenish', xPaddingPlacement: 'queryInHeader', xPaddingHeader: 'Referer', xPaddingKey: 'x_padding'},
+      {xPaddingMethod: '', xPaddingPlacement: '', xPaddingHeader: '', xPaddingKey: ''}
+    ],
+    ['obfs padding leaves with the transport', {type: 'ws', xPaddingObfsMode: 'true', xPaddingMethod: 'tokenish'}, {xPaddingObfsMode: '', xPaddingMethod: ''}],
+    ['obfs mode gains its defaults', {type: 'xhttp', xPaddingObfsMode: 'true'}, {xPaddingMethod: 'tokenish', xPaddingPlacement: 'queryInHeader'}],
+    [
+      'obfs mode keeps its choices',
+      {type: 'xhttp', xPaddingObfsMode: 'true', xPaddingMethod: 'repeat-x', xPaddingPlacement: 'header'},
+      {xPaddingMethod: 'repeat-x', xPaddingPlacement: 'header'}
+    ]
   ])('%s', (_, over, expected) => {
     expect(settle(node('vless', over))).toMatchObject(expected);
   });
@@ -303,7 +387,61 @@ describe('manualInvalid and manualLink', () => {
     ['XHTTP behind Xray mux with a TCP pool', 'vless', {username: uuid, type: 'xhttp', mux: 'xray', concurrency: '8'}, ['concurrency']],
     ['XHTTP behind Xray mux with no TCP pool', 'vless', {username: uuid, type: 'xhttp', mux: 'xray', concurrency: '-1'}, []],
     ['XHTTP behind Xray mux with the default pool', 'vless', {username: uuid, type: 'xhttp', mux: 'xray'}, ['concurrency']],
-    ['Xray mux over WebSocket with the default pool', 'vless', {username: uuid, type: 'ws', mux: 'xray'}, []]
+    ['Xray mux over WebSocket with the default pool', 'vless', {username: uuid, type: 'ws', mux: 'xray'}, []],
+    [
+      'XHTTP obfs without its header',
+      'vless',
+      {username: uuid, type: 'xhttp', xPaddingObfsMode: 'true', xPaddingMethod: 'tokenish', xPaddingPlacement: 'queryInHeader', xPaddingKey: 'x_padding'},
+      ['xPaddingHeader']
+    ],
+    [
+      'XHTTP obfs without its key',
+      'vless',
+      {username: uuid, type: 'xhttp', xPaddingObfsMode: 'true', xPaddingMethod: 'tokenish', xPaddingPlacement: 'queryInHeader', xPaddingHeader: 'Referer'},
+      ['xPaddingKey']
+    ],
+    [
+      'XHTTP obfs with its header and key',
+      'vless',
+      {
+        username: uuid,
+        type: 'xhttp',
+        xPaddingObfsMode: 'true',
+        xPaddingMethod: 'tokenish',
+        xPaddingPlacement: 'queryInHeader',
+        xPaddingHeader: 'Referer',
+        xPaddingKey: 'x_padding'
+      },
+      []
+    ],
+    [
+      'XHTTP obfs with an unknown method',
+      'vless',
+      {
+        username: uuid,
+        type: 'xhttp',
+        xPaddingObfsMode: 'true',
+        xPaddingMethod: 'bogus',
+        xPaddingPlacement: 'queryInHeader',
+        xPaddingHeader: 'Referer',
+        xPaddingKey: 'x_padding'
+      },
+      ['xPaddingMethod']
+    ],
+    [
+      'XHTTP obfs with an unknown placement',
+      'vless',
+      {
+        username: uuid,
+        type: 'xhttp',
+        xPaddingObfsMode: 'true',
+        xPaddingMethod: 'tokenish',
+        xPaddingPlacement: 'bogus',
+        xPaddingHeader: 'Referer',
+        xPaddingKey: 'x_padding'
+      },
+      ['xPaddingPlacement']
+    ]
   ] as [string, Protocol, Record<string, string>, string[]][])('flags %s', (_, protocol, over, keys) => {
     expect(manualInvalid(node(protocol, over))).toEqual(keys);
   });
