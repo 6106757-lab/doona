@@ -86,7 +86,7 @@ Available features depend on the backend’s capabilities and configuration; see
 
 ## Two editions
 
-doona lite is a preview in testing in 0.1.0-rc.8; its pages and behaviour may change. Both editions connect to the same honk with the same administrator credentials.
+doona lite is a preview in testing in 0.1.0; its pages and behaviour may change. Both editions connect to the same honk with the same administrator credentials.
 
 | Area               | Standard edition                                          | doona lite (preview)                               |
 | ------------------ | --------------------------------------------------------- | -------------------------------------------------- |
@@ -120,9 +120,9 @@ honk handles proxying; see the [honk node reference](https://github.com/daeunive
 
 ## Latest release
 
-[0.1.0-rc.8](CHANGELOG.md) has 1 entry: 1 fix.
+[0.1.0](CHANGELOG.md) has 1 entry: 1 addition.
 
-This release follows honk dropping the negative cache: the DNS cache page no longer reports unanswered resolutions as uncovered, and the coverage warnings and cache chart drop the negative entry.
+Manually adding an XHTTP node now accepts the obfuscation padding fields: enabling obfuscation mode reveals the method, placement, header and key, so the link no longer has to be edited by hand.
 
 ## Documentation
 

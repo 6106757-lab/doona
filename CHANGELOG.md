@@ -6,6 +6,12 @@ This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 Entries live in [changes/](changes/) until release.
 
+## [0.1.0] - 2026-11-20
+
+### Added
+
+- Manually adding an XHTTP node now accepts the five obfuscation padding fields (`x-padding-obfs-mode`, `x-padding-method`, `x-padding-placement`, `x-padding-header`, `x-padding-key`), so nodes that need them (for example edgetunnel) can be entered without editing the link by hand.
+
 ## [0.1.0-rc.8] - 2026-11-17
 
 ### Fixed
@@ -1051,7 +1057,8 @@ Entries live in [changes/](changes/) until release.
 
 - Keep table columns and action cells visible and prevent cards and controls from overflowing.
 
-[Unreleased]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.8...HEAD
+[Unreleased]: https://github.com/Zakkaus/doona/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.8...v0.1.0
 [0.1.0-rc.8]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.6...v0.1.0-rc.8
 [0.1.0-rc.6]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.4...v0.1.0-rc.6
 [0.1.0-rc.4]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.3...v0.1.0-rc.4
