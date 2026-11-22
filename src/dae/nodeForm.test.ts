@@ -237,32 +237,32 @@ describe('nodeLink', () => {
 const shown: [string, Protocol, Record<string, string>, string][] = [
   ['socks5', 'socks5', {}, 'username password dialer-proxy'],
   ['ss', 'ss', {}, 'password method plugin dialer-proxy'],
-  ['trojan', 'trojan', {}, 'password security sni insecure type dialer-proxy'],
-  ['trojan ws', 'trojan', {type: 'ws'}, 'password security sni insecure type transportHost path dialer-proxy'],
-  ['trojan grpc', 'trojan', {type: 'grpc'}, 'password security sni insecure type serviceName dialer-proxy'],
-  ['trojan xhttp', 'trojan', {type: 'xhttp'}, 'password security sni insecure type transportHost path mode xPaddingObfsMode dialer-proxy'],
-  ['trojan reality', 'trojan', {security: 'reality'}, 'password security sni insecure pbk sid spx type dialer-proxy'],
-  ['vless', 'vless', {}, 'username security flow sni insecure type dialer-proxy'],
-  ['vless ws', 'vless', {type: 'ws', flow: 'xtls-rprx-vision'}, 'username security sni insecure type transportHost path dialer-proxy'],
-  ['vless grpc', 'vless', {type: 'grpc'}, 'username security sni insecure type serviceName dialer-proxy'],
-  ['vless xhttp', 'vless', {type: 'xhttp'}, 'username security sni insecure type transportHost path mode xPaddingObfsMode dialer-proxy'],
+  ['trojan', 'trojan', {}, 'password security sni fp insecure type dialer-proxy'],
+  ['trojan ws', 'trojan', {type: 'ws'}, 'password security sni fp insecure type transportHost path dialer-proxy'],
+  ['trojan grpc', 'trojan', {type: 'grpc'}, 'password security sni fp insecure type serviceName dialer-proxy'],
+  ['trojan xhttp', 'trojan', {type: 'xhttp'}, 'password security sni fp insecure type transportHost path mode xPaddingObfsMode dialer-proxy'],
+  ['trojan reality', 'trojan', {security: 'reality'}, 'password security sni fp insecure pbk sid spx headerType type dialer-proxy'],
+  ['vless', 'vless', {}, 'username security flow sni fp insecure type dialer-proxy'],
+  ['vless ws', 'vless', {type: 'ws', flow: 'xtls-rprx-vision'}, 'username security sni fp insecure type transportHost path dialer-proxy'],
+  ['vless grpc', 'vless', {type: 'grpc'}, 'username security sni fp insecure type serviceName dialer-proxy'],
+  ['vless xhttp', 'vless', {type: 'xhttp'}, 'username security sni fp insecure type transportHost path mode xPaddingObfsMode dialer-proxy'],
   [
     'vless xhttp obfs',
     'vless',
     {type: 'xhttp', xPaddingObfsMode: 'true'},
-    'username security sni insecure type transportHost path mode xPaddingObfsMode xPaddingMethod xPaddingPlacement xPaddingHeader xPaddingKey dialer-proxy'
+    'username security sni fp insecure type transportHost path mode xPaddingObfsMode xPaddingMethod xPaddingPlacement xPaddingHeader xPaddingKey dialer-proxy'
   ],
-  ['vless reality', 'vless', {security: 'reality'}, 'username security flow sni insecure pbk sid spx type dialer-proxy'],
+  ['vless reality', 'vless', {security: 'reality'}, 'username security flow sni fp insecure pbk sid spx headerType type dialer-proxy'],
   ['vmess xhttp', 'vmess', {type: 'xhttp'}, 'username method security type transportHost path mode dialer-proxy'],
   ['vless without security', 'vless', {security: 'none'}, 'username security type dialer-proxy'],
   ['vmess', 'vmess', {}, 'username method security type dialer-proxy'],
-  ['vmess tls', 'vmess', {security: 'tls'}, 'username method security sni insecure type dialer-proxy'],
-  ['hysteria2', 'hysteria2', {}, 'password sni insecure obfs dialer-proxy'],
-  ['hysteria2 obfs', 'hysteria2', {obfs: 'salamander'}, 'password sni insecure obfs obfs-password dialer-proxy'],
-  ['tuic', 'tuic', {}, 'username password sni insecure congestion_control dialer-proxy'],
-  ['anytls', 'anytls', {}, 'password sni insecure dialer-proxy'],
-  ['juicity', 'juicity', {}, 'username password sni insecure dialer-proxy'],
-  ['masque', 'masque', {}, 'sni insecure network private-key public-key ip ipv6 mtu remote-dns-resolve dns dialer-proxy']
+  ['vmess tls', 'vmess', {security: 'tls'}, 'username method security sni fp insecure type dialer-proxy'],
+  ['hysteria2', 'hysteria2', {}, 'password sni fp insecure obfs dialer-proxy'],
+  ['hysteria2 obfs', 'hysteria2', {obfs: 'salamander'}, 'password sni fp insecure obfs obfs-password dialer-proxy'],
+  ['tuic', 'tuic', {}, 'username password sni fp insecure congestion_control dialer-proxy'],
+  ['anytls', 'anytls', {}, 'password sni fp insecure dialer-proxy'],
+  ['juicity', 'juicity', {}, 'username password sni fp insecure dialer-proxy'],
+  ['masque', 'masque', {}, 'sni fp insecure network private-key public-key ip ipv6 mtu remote-dns-resolve dns dialer-proxy']
 ];
 
 describe('manualFields', () => {
@@ -273,7 +273,6 @@ describe('manualFields', () => {
   it('shows nothing honk ignores, and no protocol outside the form', () => {
     const keys = new Set(protocols.flatMap(protocol => manualFields(node(protocol, {})).map(field => field.key)));
     expect(keys).not.toContain('alpn');
-    expect(keys).not.toContain('fp');
     expect(protocols).not.toContain('http');
   });
 });
@@ -381,8 +380,9 @@ describe('manualInvalid and manualLink', () => {
     ['hop ports that repeat', 'hysteria2', {password: 'pw', mport: '2000-2010,2005'}, ['mport']],
     ['hop ports that start at zero', 'hysteria2', {password: 'pw', mport: '0-10'}, ['mport']],
     ['hop ports in ranges', 'hysteria2', {password: 'pw', mport: '20000-20010, 30000'}, []],
-    ['XHTTP with H2 and another ALPN', 'vless', {username: uuid, type: 'xhttp', alpn: 'h2,http/1.1'}, ['alpn']],
+    ['XHTTP with H2 and another ALPN', 'vless', {username: uuid, type: 'xhttp', alpn: 'h2,http/1.1'}, []],
     ['XHTTP with H2 alone', 'vless', {username: uuid, type: 'xhttp', alpn: 'h2'}, []],
+    ['XHTTP without H2', 'vless', {username: uuid, type: 'xhttp', alpn: 'http/1.1'}, ['alpn']],
     ['TUIC with h3', 'tuic', {username: uuid, password: 'pw', alpn: 'h3,h2'}, []],
     ['XHTTP behind Xray mux with a TCP pool', 'vless', {username: uuid, type: 'xhttp', mux: 'xray', concurrency: '8'}, ['concurrency']],
     ['XHTTP behind Xray mux with no TCP pool', 'vless', {username: uuid, type: 'xhttp', mux: 'xray', concurrency: '-1'}, []],

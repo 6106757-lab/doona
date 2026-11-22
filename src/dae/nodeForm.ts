@@ -290,6 +290,12 @@ export const vmessMethods = ['auto', 'aes-128-gcm'];
 export const congestionControls = ['cubic', 'bbr', 'new_reno'];
 export const obfsTypes = ['', 'salamander'];
 export const transports = ['tcp', 'ws', 'grpc', 'xhttp'];
+// The TLS fingerprints honk imitates (`fp` share-link parameter); blank
+// falls back to the global `tls_implementation`/`utls_imitate` mode.
+export const tlsFingerprints = ['', 'chrome', 'firefox', 'safari', 'ios', 'android', 'edge'];
+// REALITY header types (`headerType` share-link parameter); honk reads it as
+// the spider-x path (`none` means `/`).
+export const headerTypes = ['', 'none', 'http'];
 // honk reads `h2` as the HTTP/2 carrier and `h3` as the QUIC one; both are offered even where the build supports only h2.
 export const masqueCarriers = ['h2', 'h3'];
 export const ssPlugins = ['', 'v2ray-plugin', 'obfs-local'];
@@ -321,12 +327,14 @@ export function manualFields(f: NodeFields): ManualField[] {
   if (flowOffered(f)) add('flow', {options: ['', 'xtls-rprx-vision']});
   if (usesTls(f)) {
     add('sni');
+    add('fp', {options: tlsFingerprints});
     add('insecure', {flag: '1'});
   }
   if (f.security === 'reality') {
     add('pbk', {required: true});
     add('sid');
     add('spx');
+    add('headerType', {options: headerTypes});
   }
   if (['vmess', 'vless', 'trojan'].includes(p)) {
     add('type', {options: transports});
@@ -451,12 +459,12 @@ function hopsValid(spec: string) {
       return true;
     });
 }
-// Whether honk reads a filled advanced value as given: a whole number in range, hop ports that do not repeat, H2 alone for XHTTP.
+// Whether honk reads a filled advanced value as given: a whole number in range, hop ports that do not repeat, H2 present for XHTTP.
 function advancedInvalid(f: NodeFields, {key, range}: ManualField) {
   const value = (f[key] ?? '').trim();
   if (!value) return false;
   if (range) return !/^-?\d+[a-z]*$/i.test(value) || Number.parseInt(value, 10) < range[0] || Number.parseInt(value, 10) > range[1];
-  if (key === 'alpn') return f.type === 'xhttp' && value.split(',').some(item => item.trim() && item.trim() !== 'h2');
+  if (key === 'alpn') return f.type === 'xhttp' && !value.split(',').some(item => item.trim() === 'h2');
   return key === 'mport' && !hopsValid(value);
 }
 // Whether honk reads a filled obfs value as given: the method and placement must be ones it accepts.
