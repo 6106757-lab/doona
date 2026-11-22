@@ -6,6 +6,16 @@ This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) 
 
 Entries live in [changes/](changes/) until release.
 
+## [0.1.1-rc.1] - 2026-11-22
+
+### Added
+
+- Manually adding a node now offers a TLS fingerprint (`fp`) choice (chrome, firefox, safari, ios, android, edge) and a `headerType` choice for REALITY nodes, so links that carry them can be edited without editing the link by hand.
+
+### Fixed
+
+- Manually adding an XHTTP node no longer rejects `alpn=h2,http/1.1`: any ALPN list containing `h2` is accepted, matching honk.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added
@@ -1057,7 +1067,8 @@ Entries live in [changes/](changes/) until release.
 
 - Keep table columns and action cells visible and prevent cards and controls from overflowing.
 
-[Unreleased]: https://github.com/Zakkaus/doona/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Zakkaus/doona/compare/v0.1.1-rc.1...HEAD
+[0.1.1-rc.1]: https://github.com/Zakkaus/doona/compare/v0.1.0...v0.1.1-rc.1
 [0.1.0]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.8...v0.1.0
 [0.1.0-rc.8]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.6...v0.1.0-rc.8
 [0.1.0-rc.6]: https://github.com/Zakkaus/doona/compare/v0.1.0-rc.4...v0.1.0-rc.6
